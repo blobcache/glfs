@@ -3,7 +3,7 @@ module github.com/blobcache/glfs
 go 1.16
 
 require (
-	github.com/brendoncarroll/go-state v0.0.0-20220328050547-c8b10602a6c0
+	github.com/brendoncarroll/go-state v0.0.0-20220410194844-15f19f6d3f33
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/pkg/errors v0.9.1
