@@ -1,5 +1,5 @@
-github.com/brendoncarroll/go-state v0.0.0-20220410194844-15f19f6d3f33 h1:u/gZwi457anhWaSVZ0Ovg7qlspNjbyc/93MXrsCUiwE=
-github.com/brendoncarroll/go-state v0.0.0-20220410194844-15f19f6d3f33/go.mod h1:iGr/QRPP1S157c7eb5NjWI0SOr2wRk7CzZHnt/Ff+H8=
+github.com/brendoncarroll/go-state v0.0.0-20220615195035-df569597a4aa h1:NGY+dZ0l7HXV/wKBaz3gz73KerLCsgA00o6SB05cth8=
+github.com/brendoncarroll/go-state v0.0.0-20220615195035-df569597a4aa/go.mod h1:iGr/QRPP1S157c7eb5NjWI0SOr2wRk7CzZHnt/Ff+H8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

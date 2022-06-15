@@ -35,7 +35,7 @@ func GC(ctx context.Context, store GCStore, prefix []byte, keep ...Ref) (*GCStat
 	// iterate through prefix and delete
 	scanned := 0
 	deleted := 0
-	if err := cadata.ForEach(ctx, store, func(id cadata.ID) error {
+	if err := cadata.ForEach(ctx, store, cadata.Span{}, func(id cadata.ID) error {
 		if !bytes.HasPrefix(id[:], prefix) {
 			return nil
 		}

@@ -234,7 +234,7 @@ func deriveKey(salt []byte, ptext []byte) DEK {
 
 func dumpStore(x cadata.Store) string {
 	sb := strings.Builder{}
-	cadata.ForEach(context.TODO(), x, func(x cadata.ID) error {
+	cadata.ForEach(context.TODO(), x, cadata.Span{}, func(x cadata.ID) error {
 		sb.WriteString(x.String())
 		sb.WriteString("\n")
 		return nil
