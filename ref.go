@@ -70,7 +70,7 @@ func PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, e
 
 // GetRaw retrieves the object in s at x.
 // If x.Type != ty, ErrRefType is returned.
-func GetRaw(ctx context.Context, s cadata.Store, ty Type, x Ref) (io.ReadSeeker, error) {
+func GetRaw(ctx context.Context, s cadata.Store, ty Type, x Ref) (*Reader, error) {
 	if ty != "" && x.Type != ty {
 		return nil, ErrRefType{Have: x.Type, Want: TypeBlob}
 	}

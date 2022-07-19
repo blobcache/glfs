@@ -7,13 +7,16 @@ import (
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
-var _ io.ReadSeeker = &Reader{}
+var (
+	_ io.ReadSeeker = &Reader{}
+	_ io.ReaderAt   = &Reader{}
+)
 
 type Reader struct {
 	ctx    context.Context
 	store  cadata.Store
 	root   Root
-	offset uint64
+	offset int64
 }
 
 func NewReader(ctx context.Context, s cadata.Store, root Root) *Reader {
@@ -24,20 +27,24 @@ func NewReader(ctx context.Context, s cadata.Store, root Root) *Reader {
 	}
 }
 
+func (r *Reader) ReadAt(data []byte, at int64) (int, error) {
+	return ReadAt(r.ctx, r.store, r.root, at, data)
+}
+
 func (r *Reader) Read(data []byte) (int, error) {
 	n, err := ReadAt(r.ctx, r.store, r.root, r.offset, data)
-	r.offset += uint64(n)
+	r.offset += int64(n)
 	return n, err
 }
 
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekStart:
-		r.offset = uint64(offset)
+		r.offset = offset
 	case io.SeekCurrent:
-		r.offset += uint64(offset)
+		r.offset += offset
 	case io.SeekEnd:
-		r.offset = r.root.Size - uint64(offset)
+		r.offset = int64(r.root.Size) - offset
 	default:
 		panic("invalid whence")
 	}

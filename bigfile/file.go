@@ -20,18 +20,18 @@ func (r Root) String() string {
 	return fmt.Sprintf("{%s %s %s}", r.Ref.CID.String()[:8], "chacha20", r.Ref.Compress)
 }
 
-func ReadAt(ctx context.Context, s cadata.Store, x Root, offset uint64, buf []byte) (n int, err error) {
+func ReadAt(ctx context.Context, s cadata.Store, x Root, offset int64, buf []byte) (n int, err error) {
 	level := depth(x.Size, x.BlockSize)
 	bf := branchingFactor(x.BlockSize)
-	blockIndex := offset / x.BlockSize
-	relOffset := offset % x.BlockSize
+	blockIndex := uint64(offset) / x.BlockSize
+	relOffset := uint64(offset) % x.BlockSize
 	ref, err := getPiece(ctx, s, x.Ref, int(bf), level, int(blockIndex))
 	if err != nil {
 		return n, err
 	}
 	if err := get(ctx, s, *ref, func(data []byte) error {
 		n = copy(buf[n:], data[relOffset:])
-		offset += uint64(n)
+		offset += int64(n)
 		return nil
 	}); err != nil {
 		return n, err

@@ -8,13 +8,15 @@ import (
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
+type Reader = bigfile.Reader
+
 // PostBlob creates a new blob with data from r, and returns a Ref to it.
 func PostBlob(ctx context.Context, s cadata.Store, r io.Reader) (*Ref, error) {
 	return PostRaw(ctx, s, TypeBlob, r)
 }
 
 // GetBlob returns an io.ReadSeeker for accessing data from the blob at x
-func GetBlob(ctx context.Context, s cadata.Store, x Ref) (io.ReadSeeker, error) {
+func GetBlob(ctx context.Context, s cadata.Store, x Ref) (*Reader, error) {
 	return GetRaw(ctx, s, TypeBlob, x)
 }
 
