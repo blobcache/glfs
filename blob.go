@@ -37,7 +37,7 @@ type BlobWriter struct {
 
 func NewBlobWriter(ctx context.Context, s cadata.Store) *BlobWriter {
 	return &BlobWriter{
-		inner: bigfile.NewWriter(ctx, s, DefaultBlockSize, []byte(TypeBlob)),
+		inner: bigfile.NewWriter(ctx, s, DefaultBlockSize, makeSalt(nil, TypeBlob)),
 		fpw:   NewFPWriter(),
 	}
 }

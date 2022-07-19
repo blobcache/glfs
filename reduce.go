@@ -138,7 +138,7 @@ func concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref) (*Ref, error)
 	for _, ref := range refs {
 		roots = append(roots, ref.Root)
 	}
-	yRoot, err := bigfile.Concat(ctx, s, s.MaxSize(), []byte(TypeBlob), roots...)
+	yRoot, err := bigfile.Concat(ctx, s, s.MaxSize(), makeSalt(nil, TypeBlob), roots...)
 	if err != nil {
 		return nil, err
 	}

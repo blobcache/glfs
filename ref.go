@@ -52,7 +52,7 @@ func (a Ref) Equals(b Ref) bool {
 // This can be used to extend the types provided by glfs, without interfering with syncing.
 func PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, error) {
 	fpw := NewFPWriter()
-	bw := bigfile.NewWriter(ctx, s, s.MaxSize(), []byte(TypeBlob))
+	bw := bigfile.NewWriter(ctx, s, s.MaxSize(), makeSalt(nil, ty))
 	mw := io.MultiWriter(bw, fpw)
 	if _, err := io.Copy(mw, r); err != nil {
 		return nil, err
@@ -80,4 +80,13 @@ func GetRaw(ctx context.Context, s cadata.Store, ty Type, x Ref) (*Reader, error
 // SizeOf returns the size of the data at x
 func SizeOf(x Ref) uint64 {
 	return x.Size
+}
+
+func makeSalt(init *[32]byte, ty Type) *[32]byte {
+	if init == nil {
+		init = new([32]byte)
+	}
+	var out [32]byte
+	bigfile.DeriveKey(out[:], init, []byte(ty))
+	return &out
 }

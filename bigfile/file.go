@@ -61,11 +61,11 @@ func getPiece(ctx context.Context, s cadata.Store, root Ref, bf, level, blockInd
 }
 
 type Writer struct {
-	ctx             context.Context
-	s               cadata.Store
-	blockSize       int
-	salt            []byte
-	branchingFactor int
+	ctx                context.Context
+	s                  cadata.Store
+	blockSize          int
+	indexSalt, rawSalt *[32]byte
+	branchingFactor    int
 
 	indexes []Index
 	counts  []int
@@ -73,19 +73,26 @@ type Writer struct {
 	buf     []byte
 }
 
-func NewWriter(ctx context.Context, s cadata.Store, blockSize int, salt []byte) *Writer {
+func NewWriter(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte) *Writer {
 	if blockSize > s.MaxSize() {
 		panic(fmt.Sprintf("blockSize %d > maxSize %d", blockSize, s.MaxSize()))
 	}
 	if blockSize < 2*maxRefSize {
 		panic(fmt.Sprintf("blockSize cannot be < %d", 2*maxRefSize))
 	}
+	if salt == nil {
+		salt = new([32]byte)
+	}
+	var indexSalt, rawSalt [32]byte
+	DeriveKey(indexSalt[:], salt, []byte("index"))
+	DeriveKey(rawSalt[:], salt, []byte("raw"))
 	return &Writer{
 		ctx:             ctx,
 		s:               s,
 		blockSize:       blockSize,
-		salt:            append([]byte{}, salt...),
 		branchingFactor: blockSize / maxRefSize,
+		rawSalt:         &rawSalt,
+		indexSalt:       &indexSalt,
 
 		indexes: []Index{newIndex(blockSize)},
 		counts:  []int{0},
@@ -125,7 +132,7 @@ func (w *Writer) Finish(ctx context.Context) (*Root, error) {
 }
 
 func (w *Writer) postBuf(ctx context.Context) error {
-	ref, err := post(w.ctx, w.s, w.salt, w.buf)
+	ref, err := post(w.ctx, w.s, w.rawSalt, w.buf)
 	if err != nil {
 		return err
 	}
@@ -147,8 +154,7 @@ func (w *Writer) addRef(ctx context.Context, i int, ref Ref) error {
 	if w.counts[i] < w.branchingFactor {
 		return nil
 	}
-	salt := append([]byte("index/"), w.salt...)
-	ref2, err := post(ctx, w.s, salt, w.indexes[i].x)
+	ref2, err := post(ctx, w.s, w.indexSalt, w.indexes[i].x)
 	if err != nil {
 		return err
 	}
@@ -158,11 +164,10 @@ func (w *Writer) addRef(ctx context.Context, i int, ref Ref) error {
 }
 
 func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
-	salt := append([]byte("index/"), w.salt...)
 	for i := 0; i < len(w.indexes); i++ {
 		if i == len(w.indexes)-1 {
 			if w.counts[i] == 0 {
-				return post(w.ctx, w.s, salt, nil)
+				return post(w.ctx, w.s, w.indexSalt, nil)
 			}
 			if w.counts[i] == 1 {
 				ref := w.indexes[i].Get(0)
@@ -170,7 +175,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 			}
 		}
 		if w.counts[i] > 0 {
-			ref, err := post(ctx, w.s, salt, w.indexes[i].x)
+			ref, err := post(ctx, w.s, w.indexSalt, w.indexes[i].x)
 			if err != nil {
 				return nil, err
 			}
@@ -183,7 +188,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 }
 
 // Create creates a Blob and returns it's Root.
-func Create(ctx context.Context, s cadata.Store, salt []byte, r io.Reader) (*Root, error) {
+func Create(ctx context.Context, s cadata.Store, salt *[32]byte, r io.Reader) (*Root, error) {
 	w := NewWriter(ctx, s, s.MaxSize(), salt)
 	if _, err := io.Copy(w, r); err != nil {
 		return nil, err
@@ -242,7 +247,7 @@ func branchingFactor(blockSize uint64) uint64 {
 	return blockSize / maxRefSize
 }
 
-func Sync(ctx context.Context, dst, src cadata.Store, x Root, fn func(r io.Reader) error) error {
+func Sync(ctx context.Context, dst, src cadata.Store, x Root, fn func(r *Reader) error) error {
 	if exists, err := cadata.Exists(ctx, dst, x.Ref.CID); err != nil {
 		return err
 	} else if exists {
@@ -279,7 +284,7 @@ func sync(ctx context.Context, dst, src cadata.Store, blockSize uint64, ref Ref,
 	return cadata.Copy(ctx, dst, src, ref.CID)
 }
 
-func Concat(ctx context.Context, s cadata.Store, blockSize int, salt []byte, roots ...Root) (*Root, error) {
+func Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
 	rs := make([]io.Reader, len(roots))
 	for i := range roots {
 		rs[i] = NewReader(ctx, s, roots[i])

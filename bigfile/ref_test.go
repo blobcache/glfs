@@ -13,7 +13,7 @@ func TestRefPostGet(t *testing.T) {
 	ctx := context.TODO()
 	s := cadata.NewMem(cadata.DefaultHash, 1<<10)
 	testData := "test data"
-	ref, err := post(ctx, s, []byte("test"), []byte(testData))
+	ref, err := post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)
 	err = get(ctx, s, *ref, func(data []byte) error {
 		require.Equal(t, testData, string(data))
@@ -26,7 +26,7 @@ func TestRefMarshal(t *testing.T) {
 	ctx := context.TODO()
 	s := cadata.NewMem(cadata.DefaultHash, 1<<10)
 	testData := "test data"
-	ref, err := post(ctx, s, []byte("test"), []byte(testData))
+	ref, err := post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)
 
 	data := marshalRef(*ref)

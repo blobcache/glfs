@@ -121,9 +121,6 @@ type TreeEntry struct {
 	Ref      Ref         `json:"ref"`
 }
 
-const fieldSep = " "
-const numFields = 4
-
 func (te *TreeEntry) Validate() error {
 	cleaned := CleanPath(te.Name)
 	if cleaned != te.Name {
@@ -168,7 +165,7 @@ func PostTree(ctx context.Context, store cadata.Store, t Tree) (*Ref, error) {
 	if err != nil {
 		return nil, err
 	}
-	root, err := bigfile.Create(ctx, store, []byte(TypeTree), bytes.NewReader(data))
+	root, err := bigfile.Create(ctx, store, makeSalt(nil, TypeTree), bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}

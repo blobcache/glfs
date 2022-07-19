@@ -105,13 +105,13 @@ func marshalRef(x Ref) []byte {
 	return data
 }
 
-func post(ctx context.Context, s cadata.Store, salt []byte, ptext []byte) (*Ref, error) {
+func post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*Ref, error) {
 	compressCodec, compData, err := compress(CompressSnappy, ptext)
 	if err != nil {
 		return nil, err
 	}
 	ctext := make([]byte, len(compData))
-	dek := encrypt(ctext, compData, salt)
+	dek := encrypt(salt, ctext, compData)
 	cid, err := s.Post(ctx, ctext)
 	if err != nil {
 		return nil, err
@@ -205,11 +205,11 @@ func decompress(codec CompressionCodec, src []byte) ([]byte, error) {
 	}
 }
 
-func encrypt(ctext, ptext, salt []byte) DEK {
+func encrypt(salt *[32]byte, ctext, ptext []byte) DEK {
 	if len(ctext) != len(ptext) {
 		panic("len(ctext) != len(ptext)")
 	}
-	dek := deriveKey(salt, ptext)
+	dek := makeDEK(salt, ptext)
 	cryptoXOR(dek, ctext, ptext)
 	return dek
 }
@@ -223,13 +223,21 @@ func cryptoXOR(key DEK, dst, src []byte) {
 	ciph.XORKeyStream(dst, src)
 }
 
-func deriveKey(salt []byte, ptext []byte) DEK {
-	h := blake3.New(32, nil)
-	h.Write(salt)
-	h.Write(ptext)
-	dek := DEK{}
-	h.Sum(dek[:0])
+func makeDEK(salt *[32]byte, ptext []byte) (dek DEK) {
+	DeriveKey(dek[:], salt, ptext)
 	return dek
+}
+
+// DeriveKey uses BLAKE3 keyed with salt, to absorb input, and derive a new key into out
+func DeriveKey(out []byte, salt *[32]byte, input []byte) {
+	h := blake3.New(len(out), salt[:])
+	if _, err := h.Write(input); err != nil {
+		panic(err)
+	}
+	xof := h.XOF()
+	if _, err := io.ReadFull(xof, out); err != nil {
+		panic(err)
+	}
 }
 
 func dumpStore(x cadata.Store) string {
