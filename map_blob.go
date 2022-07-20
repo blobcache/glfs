@@ -5,7 +5,6 @@ import (
 	"io"
 	"path"
 
-	"github.com/blobcache/glfs/bigfile"
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
@@ -15,7 +14,7 @@ func MapBlobs(ctx context.Context, s cadata.Store, root Ref, f BlobMapper) (*Ref
 	return MapLeaves(ctx, s, root, func(p string, x Ref) (*Ref, error) {
 		switch x.Type {
 		case TypeBlob:
-			r := bigfile.NewReader(ctx, s, x.Root)
+			r := bfop.NewReader(ctx, s, x.Root)
 			w := NewBlobWriter(ctx, s)
 			if err := f(p, r, w); err != nil {
 				return nil, err

@@ -138,11 +138,11 @@ func concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref) (*Ref, error)
 	for _, ref := range refs {
 		roots = append(roots, ref.Root)
 	}
-	yRoot, err := bigfile.Concat(ctx, s, s.MaxSize(), makeSalt(nil, TypeBlob), roots...)
+	yRoot, err := bfop.Concat(ctx, s, s.MaxSize(), makeSalt(nil, TypeBlob), roots...)
 	if err != nil {
 		return nil, err
 	}
-	r := bigfile.NewReader(ctx, s, *yRoot)
+	r := bfop.NewReader(ctx, s, *yRoot)
 	fp, err := FPReader(r)
 	if err != nil {
 		return nil, err

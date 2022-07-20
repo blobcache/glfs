@@ -13,14 +13,16 @@ var (
 )
 
 type Reader struct {
+	o      *Operator
 	ctx    context.Context
 	store  cadata.Store
 	root   Root
 	offset int64
 }
 
-func NewReader(ctx context.Context, s cadata.Store, root Root) *Reader {
+func (o *Operator) NewReader(ctx context.Context, s cadata.Store, root Root) *Reader {
 	return &Reader{
+		o:     o,
 		ctx:   ctx,
 		store: s,
 		root:  root,
@@ -28,11 +30,11 @@ func NewReader(ctx context.Context, s cadata.Store, root Root) *Reader {
 }
 
 func (r *Reader) ReadAt(data []byte, at int64) (int, error) {
-	return ReadAt(r.ctx, r.store, r.root, at, data)
+	return r.o.ReadAt(r.ctx, r.store, r.root, at, data)
 }
 
 func (r *Reader) Read(data []byte) (int, error) {
-	n, err := ReadAt(r.ctx, r.store, r.root, r.offset, data)
+	n, err := r.o.ReadAt(r.ctx, r.store, r.root, r.offset, data)
 	r.offset += int64(n)
 	return n, err
 }

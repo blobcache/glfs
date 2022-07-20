@@ -20,16 +20,16 @@ func (r Root) String() string {
 	return fmt.Sprintf("{%s %s %s}", r.Ref.CID.String()[:8], "chacha20", r.Ref.Compress)
 }
 
-func ReadAt(ctx context.Context, s cadata.Store, x Root, offset int64, buf []byte) (n int, err error) {
+func (o *Operator) ReadAt(ctx context.Context, s cadata.Store, x Root, offset int64, buf []byte) (n int, err error) {
 	level := depth(x.Size, x.BlockSize)
 	bf := branchingFactor(x.BlockSize)
 	blockIndex := uint64(offset) / x.BlockSize
 	relOffset := uint64(offset) % x.BlockSize
-	ref, err := getPiece(ctx, s, x.Ref, int(bf), level, int(blockIndex))
+	ref, err := o.getPiece(ctx, s, x.Ref, int(bf), level, int(blockIndex))
 	if err != nil {
 		return n, err
 	}
-	if err := get(ctx, s, *ref, func(data []byte) error {
+	if err := o.get(ctx, s, *ref, func(data []byte) error {
 		n = copy(buf[n:], data[relOffset:])
 		offset += int64(n)
 		return nil
@@ -42,12 +42,12 @@ func ReadAt(ctx context.Context, s cadata.Store, x Root, offset int64, buf []byt
 	return n, nil
 }
 
-func getPiece(ctx context.Context, s cadata.Store, root Ref, bf, level, blockIndex int) (*Ref, error) {
+func (o *Operator) getPiece(ctx context.Context, s cadata.Store, root Ref, bf, level, blockIndex int) (*Ref, error) {
 	if level == 0 {
 		return &root, nil
 	}
 	var ref Ref
-	if err := get(ctx, s, root, func(data []byte) error {
+	if err := o.get(ctx, s, root, func(data []byte) error {
 		idx, err := newIndexUsing(data, bf*maxRefSize)
 		if err != nil {
 			return err
@@ -57,11 +57,12 @@ func getPiece(ctx context.Context, s cadata.Store, root Ref, bf, level, blockInd
 	}); err != nil {
 		return nil, err
 	}
-	return getPiece(ctx, s, ref, bf, level-1, blockIndex%powInt(bf, level-1))
+	return o.getPiece(ctx, s, ref, bf, level-1, blockIndex%powInt(bf, level-1))
 }
 
 type Writer struct {
 	ctx                context.Context
+	o                  *Operator
 	s                  cadata.Store
 	blockSize          int
 	indexSalt, rawSalt *[32]byte
@@ -73,7 +74,7 @@ type Writer struct {
 	buf     []byte
 }
 
-func NewWriter(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte) *Writer {
+func (o *Operator) NewWriter(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte) *Writer {
 	if blockSize > s.MaxSize() {
 		panic(fmt.Sprintf("blockSize %d > maxSize %d", blockSize, s.MaxSize()))
 	}
@@ -88,6 +89,7 @@ func NewWriter(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byt
 	DeriveKey(rawSalt[:], salt, []byte("raw"))
 	return &Writer{
 		ctx:             ctx,
+		o:               o,
 		s:               s,
 		blockSize:       blockSize,
 		branchingFactor: blockSize / maxRefSize,
@@ -132,7 +134,7 @@ func (w *Writer) Finish(ctx context.Context) (*Root, error) {
 }
 
 func (w *Writer) postBuf(ctx context.Context) error {
-	ref, err := post(w.ctx, w.s, w.rawSalt, w.buf)
+	ref, err := w.o.post(w.ctx, w.s, w.rawSalt, w.buf)
 	if err != nil {
 		return err
 	}
@@ -154,7 +156,7 @@ func (w *Writer) addRef(ctx context.Context, i int, ref Ref) error {
 	if w.counts[i] < w.branchingFactor {
 		return nil
 	}
-	ref2, err := post(ctx, w.s, w.indexSalt, w.indexes[i].x)
+	ref2, err := w.o.post(ctx, w.s, w.indexSalt, w.indexes[i].x)
 	if err != nil {
 		return err
 	}
@@ -167,7 +169,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 	for i := 0; i < len(w.indexes); i++ {
 		if i == len(w.indexes)-1 {
 			if w.counts[i] == 0 {
-				return post(w.ctx, w.s, w.indexSalt, nil)
+				return w.o.post(w.ctx, w.s, w.indexSalt, nil)
 			}
 			if w.counts[i] == 1 {
 				ref := w.indexes[i].Get(0)
@@ -175,7 +177,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 			}
 		}
 		if w.counts[i] > 0 {
-			ref, err := post(ctx, w.s, w.indexSalt, w.indexes[i].x)
+			ref, err := w.o.post(ctx, w.s, w.indexSalt, w.indexes[i].x)
 			if err != nil {
 				return nil, err
 			}
@@ -188,8 +190,8 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 }
 
 // Create creates a Blob and returns it's Root.
-func Create(ctx context.Context, s cadata.Store, salt *[32]byte, r io.Reader) (*Root, error) {
-	w := NewWriter(ctx, s, s.MaxSize(), salt)
+func (o *Operator) Create(ctx context.Context, s cadata.Store, salt *[32]byte, r io.Reader) (*Root, error) {
+	w := o.NewWriter(ctx, s, s.MaxSize(), salt)
 	if _, err := io.Copy(w, r); err != nil {
 		return nil, err
 	}
@@ -247,22 +249,22 @@ func branchingFactor(blockSize uint64) uint64 {
 	return blockSize / maxRefSize
 }
 
-func Sync(ctx context.Context, dst, src cadata.Store, x Root, fn func(r *Reader) error) error {
+func (o *Operator) Sync(ctx context.Context, dst, src cadata.Store, x Root, fn func(r *Reader) error) error {
 	if exists, err := cadata.Exists(ctx, dst, x.Ref.CID); err != nil {
 		return err
 	} else if exists {
 		return nil
 	}
-	r := NewReader(ctx, src, x)
+	r := o.NewReader(ctx, src, x)
 	if err := fn(r); err != nil {
 		return err
 	}
-	return sync(ctx, dst, src, x.BlockSize, x.Ref, depth(x.Size, x.BlockSize))
+	return o.sync(ctx, dst, src, x.BlockSize, x.Ref, depth(x.Size, x.BlockSize))
 }
 
-func sync(ctx context.Context, dst, src cadata.Store, blockSize uint64, ref Ref, level int) error {
+func (o *Operator) sync(ctx context.Context, dst, src cadata.Store, blockSize uint64, ref Ref, level int) error {
 	if level > 0 {
-		if err := get(ctx, src, ref, func(data []byte) error {
+		if err := o.get(ctx, src, ref, func(data []byte) error {
 			idx, err := newIndexUsing(data, int(blockSize))
 			if err != nil {
 				return err
@@ -272,7 +274,7 @@ func sync(ctx context.Context, dst, src cadata.Store, blockSize uint64, ref Ref,
 				if ref2.CID.IsZero() {
 					break
 				}
-				if err := sync(ctx, dst, src, blockSize, ref2, level-1); err != nil {
+				if err := o.sync(ctx, dst, src, blockSize, ref2, level-1); err != nil {
 					return err
 				}
 			}
@@ -284,13 +286,13 @@ func sync(ctx context.Context, dst, src cadata.Store, blockSize uint64, ref Ref,
 	return cadata.Copy(ctx, dst, src, ref.CID)
 }
 
-func Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
+func (o *Operator) Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
 	rs := make([]io.Reader, len(roots))
 	for i := range roots {
-		rs[i] = NewReader(ctx, s, roots[i])
+		rs[i] = o.NewReader(ctx, s, roots[i])
 	}
 	mr := io.MultiReader(rs...)
-	w := NewWriter(ctx, s, blockSize, salt)
+	w := o.NewWriter(ctx, s, blockSize, salt)
 	if _, err := io.Copy(w, mr); err != nil {
 		return nil, err
 	}

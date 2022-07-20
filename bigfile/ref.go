@@ -11,7 +11,6 @@ import (
 
 	"github.com/brendoncarroll/go-state/cadata"
 	"github.com/golang/snappy"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/chacha20"
 	"lukechampine.com/blake3"
@@ -105,7 +104,7 @@ func marshalRef(x Ref) []byte {
 	return data
 }
 
-func post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*Ref, error) {
+func (o *Operator) post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*Ref, error) {
 	compressCodec, compData, err := compress(CompressSnappy, ptext)
 	if err != nil {
 		return nil, err
@@ -123,18 +122,8 @@ func post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*R
 	}, nil
 }
 
-var cache = newCache(64)
-
-func newCache(size int) *lru.Cache {
-	cache, err := lru.New(size)
-	if err != nil {
-		panic(err)
-	}
-	return cache
-}
-
-func get(ctx context.Context, s cadata.Store, ref Ref, fn func([]byte) error) error {
-	if value, ok := cache.Get(ref.Key()); ok {
+func (o *Operator) get(ctx context.Context, s cadata.Store, ref Ref, fn func([]byte) error) error {
+	if value, ok := o.cache.Get(ref.Key()); ok {
 		return fn(value.([]byte))
 	}
 	buf := make([]byte, s.MaxSize())
@@ -150,7 +139,7 @@ func get(ctx context.Context, s cadata.Store, ref Ref, fn func([]byte) error) er
 	if err != nil {
 		return err
 	}
-	cache.Add(ref.Key(), data)
+	o.cache.Add(ref.Key(), data)
 	return fn(data)
 }
 

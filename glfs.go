@@ -48,11 +48,13 @@ func (a Ref) Equals(b Ref) bool {
 	return a.Type == b.Type && a.Fingerprint == b.Fingerprint
 }
 
+var bfop = bigfile.NewOperator()
+
 // PostRaw posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
 func PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, error) {
 	fpw := NewFPWriter()
-	bw := bigfile.NewWriter(ctx, s, s.MaxSize(), makeSalt(nil, ty))
+	bw := bfop.NewWriter(ctx, s, s.MaxSize(), makeSalt(nil, ty))
 	mw := io.MultiWriter(bw, fpw)
 	if _, err := io.Copy(mw, r); err != nil {
 		return nil, err
@@ -74,7 +76,7 @@ func GetRaw(ctx context.Context, s cadata.Store, ty Type, x Ref) (*Reader, error
 	if ty != "" && x.Type != ty {
 		return nil, ErrRefType{Have: x.Type, Want: TypeBlob}
 	}
-	return bigfile.NewReader(ctx, s, x.Root), nil
+	return bfop.NewReader(ctx, s, x.Root), nil
 }
 
 // SizeOf returns the size of the data at x

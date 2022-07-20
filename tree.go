@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/blobcache/glfs/bigfile"
 	"github.com/brendoncarroll/go-state/cadata"
 	"github.com/pkg/errors"
 )
@@ -165,7 +164,7 @@ func PostTree(ctx context.Context, store cadata.Store, t Tree) (*Ref, error) {
 	if err != nil {
 		return nil, err
 	}
-	root, err := bigfile.Create(ctx, store, makeSalt(nil, TypeTree), bytes.NewReader(data))
+	root, err := bfop.Create(ctx, store, makeSalt(nil, TypeTree), bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +203,7 @@ func GetTree(ctx context.Context, store cadata.Store, ref Ref) (*Tree, error) {
 	if ref.Type != TypeTree {
 		return nil, ErrRefType{Have: ref.Type, Want: TypeTree}
 	}
-	r := bigfile.NewReader(ctx, store, ref.Root)
+	r := bfop.NewReader(ctx, store, ref.Root)
 	return readTree(r)
 }
 

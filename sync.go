@@ -3,7 +3,6 @@ package glfs
 import (
 	"context"
 
-	"github.com/blobcache/glfs/bigfile"
 	"github.com/brendoncarroll/go-state/cadata"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -14,9 +13,9 @@ import (
 func Sync(ctx context.Context, dst, src cadata.Store, x Ref) error {
 	switch x.Type {
 	case TypeBlob:
-		return bigfile.Sync(ctx, dst, src, x.Root, func(r *Reader) error { return nil })
+		return bfop.Sync(ctx, dst, src, x.Root, func(r *Reader) error { return nil })
 	case TypeTree:
-		return bigfile.Sync(ctx, dst, src, x.Root, func(r *Reader) error {
+		return bfop.Sync(ctx, dst, src, x.Root, func(r *Reader) error {
 			tree, err := readTree(r)
 			if err != nil {
 				return err
