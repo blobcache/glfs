@@ -16,7 +16,7 @@ import (
 // Merge(tree1, tree2) -> set of entry names given by tree1 + tree2. value at entry x given by Merge(tree1[x], tree2[x])
 // Although not written as such for performance reasons:
 // Merging(1, 2, 3, 4, 5) == Merge(Merge(Merge(Merge(1, 2), 3), 4), 5)
-func Merge(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
+func (o *Operator) Merge(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
 	switch {
 	case len(layers) == 0:
 		panic("merging 0 layers")
@@ -30,7 +30,7 @@ func Merge(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error)
 	for _, layer := range layers {
 		switch layer.Type {
 		case TypeTree:
-			tree, err := GetTree(ctx, store, layer)
+			tree, err := o.GetTree(ctx, store, layer)
 			if err != nil {
 				return nil, err
 			}
@@ -51,7 +51,7 @@ func Merge(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error)
 		for _, ent := range entries {
 			layers2 = append(layers2, ent.Ref)
 		}
-		ref, err := Merge(ctx, store, layers2...)
+		ref, err := o.Merge(ctx, store, layers2...)
 		if err != nil {
 			return nil, err
 		}
@@ -62,10 +62,10 @@ func Merge(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error)
 			FileMode: lastEnt.FileMode,
 		})
 	}
-	return PostTree(ctx, store, tree)
+	return o.PostTree(ctx, store, tree)
 }
 
-func Concat(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
+func (o *Operator) Concat(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
 	switch {
 	case len(layers) == 0:
 		return nil, errors.New("concat 0 refs")
@@ -73,37 +73,37 @@ func Concat(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error
 		return &layers[0], nil
 	case len(layers) == 2:
 		left, right := layers[0], layers[1]
-		return concat2(ctx, store, left, right)
+		return o.concat2(ctx, store, left, right)
 	default:
-		left, err := Concat(ctx, store, layers[:2]...)
+		left, err := o.Concat(ctx, store, layers[:2]...)
 		if err != nil {
 			return nil, err
 		}
-		right, err := Concat(ctx, store, layers[2:]...)
+		right, err := o.Concat(ctx, store, layers[2:]...)
 		if err != nil {
 			return nil, err
 		}
-		return Concat(ctx, store, *left, *right)
+		return o.Concat(ctx, store, *left, *right)
 	}
 }
 
-func concat2(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
+func (o *Operator) concat2(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
 	switch {
 	case left.Type == TypeBlob && right.Type == TypeBlob:
-		return concatBlobs(ctx, store, left, right)
+		return o.concatBlobs(ctx, store, left, right)
 	case left.Type == TypeTree && right.Type == TypeTree:
-		return concat2Trees(ctx, store, left, right)
+		return o.concat2Trees(ctx, store, left, right)
 	default:
 		return nil, errors.Errorf("can't concat types %s %s", left.Type, right.Type)
 	}
 }
 
-func concat2Trees(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
-	leftTree, err := GetTree(ctx, store, left)
+func (o *Operator) concat2Trees(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
+	leftTree, err := o.GetTree(ctx, store, left)
 	if err != nil {
 		return nil, err
 	}
-	rightTree, err := GetTree(ctx, store, left)
+	rightTree, err := o.GetTree(ctx, store, left)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func concat2Trees(ctx context.Context, store cadata.Store, left, right Ref) (*Re
 	}
 	for _, ent2 := range rightTree.Entries {
 		if ent1, exists := m[ent2.Name]; exists {
-			ref, err := Concat(ctx, store, ent1.Ref, ent2.Ref)
+			ref, err := o.Concat(ctx, store, ent1.Ref, ent2.Ref)
 			if err != nil {
 				return nil, err
 			}
@@ -130,19 +130,19 @@ func concat2Trees(ctx context.Context, store cadata.Store, left, right Ref) (*Re
 	for _, ent := range m {
 		tree.Entries = append(tree.Entries, ent)
 	}
-	return PostTree(ctx, store, tree)
+	return o.PostTree(ctx, store, tree)
 }
 
-func concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref) (*Ref, error) {
+func (o *Operator) concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref) (*Ref, error) {
 	var roots []bigfile.Root
 	for _, ref := range refs {
 		roots = append(roots, ref.Root)
 	}
-	yRoot, err := bfop.Concat(ctx, s, s.MaxSize(), makeSalt(nil, TypeBlob), roots...)
+	yRoot, err := o.bfop.Concat(ctx, s, s.MaxSize(), o.makeSalt(TypeBlob), roots...)
 	if err != nil {
 		return nil, err
 	}
-	r := bfop.NewReader(ctx, s, *yRoot)
+	r := o.bfop.NewReader(ctx, s, *yRoot)
 	fp, err := FPReader(r)
 	if err != nil {
 		return nil, err

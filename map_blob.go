@@ -10,12 +10,12 @@ import (
 
 type BlobMapper func(p string, in io.Reader, out io.Writer) error
 
-func MapBlobs(ctx context.Context, s cadata.Store, root Ref, f BlobMapper) (*Ref, error) {
-	return MapLeaves(ctx, s, root, func(p string, x Ref) (*Ref, error) {
+func (o *Operator) MapBlobs(ctx context.Context, s cadata.Store, root Ref, f BlobMapper) (*Ref, error) {
+	return o.MapLeaves(ctx, s, root, func(p string, x Ref) (*Ref, error) {
 		switch x.Type {
 		case TypeBlob:
-			r := bfop.NewReader(ctx, s, x.Root)
-			w := NewBlobWriter(ctx, s)
+			r := o.bfop.NewReader(ctx, s, x.Root)
+			w := o.NewBlobWriter(ctx, s)
 			if err := f(p, r, w); err != nil {
 				return nil, err
 			}
@@ -28,21 +28,21 @@ func MapBlobs(ctx context.Context, s cadata.Store, root Ref, f BlobMapper) (*Ref
 
 type RefMapper func(p string, ref Ref) (*Ref, error)
 
-func MapLeaves(ctx context.Context, s cadata.Store, root Ref, f RefMapper) (*Ref, error) {
-	return mapLeaves(ctx, s, root, "", f)
+func (o *Operator) MapLeaves(ctx context.Context, s cadata.Store, root Ref, f RefMapper) (*Ref, error) {
+	return o.mapLeaves(ctx, s, root, "", f)
 }
 
-func mapLeaves(ctx context.Context, s cadata.Store, root Ref, p string, f RefMapper) (*Ref, error) {
+func (o *Operator) mapLeaves(ctx context.Context, s cadata.Store, root Ref, p string, f RefMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
-		tree, err := GetTree(ctx, s, root)
+		tree, err := o.GetTree(ctx, s, root)
 		if err != nil {
 			return nil, err
 		}
 		tree2 := Tree{}
 		for _, ent := range tree.Entries {
 			p2 := path.Join(p, ent.Name)
-			ref, err := mapLeaves(ctx, s, ent.Ref, p2, f)
+			ref, err := o.mapLeaves(ctx, s, ent.Ref, p2, f)
 			if err != nil {
 				return nil, err
 			}
@@ -54,7 +54,7 @@ func mapLeaves(ctx context.Context, s cadata.Store, root Ref, p string, f RefMap
 				})
 			}
 		}
-		return PostTree(ctx, s, tree2)
+		return o.PostTree(ctx, s, tree2)
 	default:
 		return f(p, root)
 	}

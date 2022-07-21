@@ -48,13 +48,11 @@ func (a Ref) Equals(b Ref) bool {
 	return a.Type == b.Type && a.Fingerprint == b.Fingerprint
 }
 
-var bfop = bigfile.NewOperator()
-
 // PostRaw posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
-func PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, error) {
+func (o *Operator) PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, error) {
 	fpw := NewFPWriter()
-	bw := bfop.NewWriter(ctx, s, s.MaxSize(), makeSalt(nil, ty))
+	bw := o.bfop.NewWriter(ctx, s, s.MaxSize(), o.makeSalt(ty))
 	mw := io.MultiWriter(bw, fpw)
 	if _, err := io.Copy(mw, r); err != nil {
 		return nil, err
@@ -72,23 +70,14 @@ func PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, e
 
 // GetRaw retrieves the object in s at x.
 // If x.Type != ty, ErrRefType is returned.
-func GetRaw(ctx context.Context, s cadata.Store, ty Type, x Ref) (*Reader, error) {
+func (o *Operator) GetRaw(ctx context.Context, s cadata.Store, ty Type, x Ref) (*Reader, error) {
 	if ty != "" && x.Type != ty {
 		return nil, ErrRefType{Have: x.Type, Want: TypeBlob}
 	}
-	return bfop.NewReader(ctx, s, x.Root), nil
+	return o.bfop.NewReader(ctx, s, x.Root), nil
 }
 
 // SizeOf returns the size of the data at x
 func SizeOf(x Ref) uint64 {
 	return x.Size
-}
-
-func makeSalt(init *[32]byte, ty Type) *[32]byte {
-	if init == nil {
-		init = new([32]byte)
-	}
-	var out [32]byte
-	bigfile.DeriveKey(out[:], init, []byte(ty))
-	return &out
 }

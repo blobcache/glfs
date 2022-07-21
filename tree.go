@@ -133,7 +133,7 @@ func (te *TreeEntry) Validate() error {
 
 // GetAtPath returns a ref to the object under ref at subpath.
 // ErrNoEnt is returned if there is no entry at that path.
-func GetAtPath(ctx context.Context, store cadata.Store, ref Ref, subpath string) (*Ref, error) {
+func (o *Operator) GetAtPath(ctx context.Context, store cadata.Store, ref Ref, subpath string) (*Ref, error) {
 	subpath = strings.Trim(subpath, "/")
 	if subpath == "" {
 		return &ref, nil
@@ -147,7 +147,7 @@ func GetAtPath(ctx context.Context, store cadata.Store, ref Ref, subpath string)
 		parts = append(parts, "")
 	}
 
-	t, err := GetTree(ctx, store, ref)
+	t, err := o.GetTree(ctx, store, ref)
 	if err != nil {
 		return nil, err
 	}
@@ -155,16 +155,16 @@ func GetAtPath(ctx context.Context, store cadata.Store, ref Ref, subpath string)
 	if ent == nil {
 		return nil, &ErrNoEnt{Name: parts[0]}
 	}
-	return GetAtPath(ctx, store, ent.Ref, parts[1])
+	return o.GetAtPath(ctx, store, ent.Ref, parts[1])
 }
 
 // PostTree writes a tree to CA storage and returns a Ref pointing to it.
-func PostTree(ctx context.Context, store cadata.Store, t Tree) (*Ref, error) {
+func (o *Operator) PostTree(ctx context.Context, store cadata.Store, t Tree) (*Ref, error) {
 	data, err := t.MarshalText()
 	if err != nil {
 		return nil, err
 	}
-	root, err := bfop.Create(ctx, store, makeSalt(nil, TypeTree), bytes.NewReader(data))
+	root, err := o.bfop.Create(ctx, store, o.makeSalt(TypeTree), bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
@@ -199,11 +199,11 @@ func computeTreeFingerprint(t Tree) Fingerprint {
 
 // GetTree retreives the tree in store at Ref if it exists.
 // If ref.Type != TypeTree ErrRefType is returned.
-func GetTree(ctx context.Context, store cadata.Store, ref Ref) (*Tree, error) {
+func (o *Operator) GetTree(ctx context.Context, store cadata.Store, ref Ref) (*Tree, error) {
 	if ref.Type != TypeTree {
 		return nil, ErrRefType{Have: ref.Type, Want: TypeTree}
 	}
-	r := bfop.NewReader(ctx, store, ref.Root)
+	r := o.bfop.NewReader(ctx, store, ref.Root)
 	return readTree(r)
 }
 
@@ -225,12 +225,12 @@ type WalkTreeFunc = func(prefix string, tree TreeEntry) error
 // WalkTree walks the tree and calls f with tree entries in lexigraphical order
 // file1.txt comes before file2.txt
 // dir1/ comes before dir1/file1.txt
-func WalkTree(ctx context.Context, store cadata.Store, ref Ref, f WalkTreeFunc) error {
-	return walkTree(ctx, store, ref, f, "")
+func (o *Operator) WalkTree(ctx context.Context, store cadata.Store, ref Ref, f WalkTreeFunc) error {
+	return o.walkTree(ctx, store, ref, f, "")
 }
 
-func walkTree(ctx context.Context, store cadata.Store, ref Ref, f WalkTreeFunc, prefix string) error {
-	tree, err := GetTree(ctx, store, ref)
+func (o *Operator) walkTree(ctx context.Context, store cadata.Store, ref Ref, f WalkTreeFunc, prefix string) error {
+	tree, err := o.GetTree(ctx, store, ref)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func walkTree(ctx context.Context, store cadata.Store, ref Ref, f WalkTreeFunc, 
 		}
 		if ent.Ref.Type == TypeTree {
 			p2 := path.Join(prefix, ent.Name)
-			if err := walkTree(ctx, store, ent.Ref, f, p2); err != nil {
+			if err := o.walkTree(ctx, store, ent.Ref, f, p2); err != nil {
 				return err
 			}
 		}
@@ -252,14 +252,14 @@ type RefWalker func(ref Ref) error
 
 // WalkRefs calls fn with every Ref reacheable from ref, including Ref. The only guarentee about order is bottom up.
 // if a tree is encoutered the child refs will be visited first.
-func WalkRefs(ctx context.Context, s cadata.Store, ref Ref, fn RefWalker) error {
+func (o *Operator) WalkRefs(ctx context.Context, s cadata.Store, ref Ref, fn RefWalker) error {
 	if ref.Type == TypeTree {
-		tree, err := GetTree(ctx, s, ref)
+		tree, err := o.GetTree(ctx, s, ref)
 		if err != nil {
 			return err
 		}
 		for _, ent := range tree.Entries {
-			if err := WalkRefs(ctx, s, ent.Ref, fn); err != nil {
+			if err := o.WalkRefs(ctx, s, ent.Ref, fn); err != nil {
 				return err
 			}
 		}
@@ -267,7 +267,7 @@ func WalkRefs(ctx context.Context, s cadata.Store, ref Ref, fn RefWalker) error 
 	return fn(ref)
 }
 
-func PostTreeFromEntries(ctx context.Context, s cadata.Store, ents []TreeEntry) (*Ref, error) {
+func (o *Operator) PostTreeFromEntries(ctx context.Context, s cadata.Store, ents []TreeEntry) (*Ref, error) {
 	tree := Tree{}
 	subents := map[string][]TreeEntry{}
 	for _, ent := range ents {
@@ -292,7 +292,7 @@ func PostTreeFromEntries(ctx context.Context, s cadata.Store, ents []TreeEntry) 
 	}
 
 	for k, ents2 := range subents {
-		ref, err := PostTreeFromEntries(ctx, s, ents2)
+		ref, err := o.PostTreeFromEntries(ctx, s, ents2)
 		if err != nil {
 			return nil, err
 		}
@@ -302,10 +302,10 @@ func PostTreeFromEntries(ctx context.Context, s cadata.Store, ents []TreeEntry) 
 			Ref:      *ref,
 		})
 	}
-	return PostTree(ctx, s, tree)
+	return o.PostTree(ctx, s, tree)
 }
 
-func PostTreeFromMap(ctx context.Context, s cadata.Store, m map[string]Ref) (*Ref, error) {
+func (o *Operator) PostTreeFromMap(ctx context.Context, s cadata.Store, m map[string]Ref) (*Ref, error) {
 	entries := []TreeEntry{}
 	for k, v := range m {
 		entries = append(entries, TreeEntry{
@@ -314,7 +314,7 @@ func PostTreeFromMap(ctx context.Context, s cadata.Store, m map[string]Ref) (*Re
 			Ref:      v,
 		})
 	}
-	return PostTreeFromEntries(ctx, s, entries)
+	return o.PostTreeFromEntries(ctx, s, entries)
 }
 
 func getFileMode(tr Ref) os.FileMode {

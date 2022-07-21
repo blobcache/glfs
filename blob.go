@@ -11,18 +11,18 @@ import (
 type Reader = bigfile.Reader
 
 // PostBlob creates a new blob with data from r, and returns a Ref to it.
-func PostBlob(ctx context.Context, s cadata.Store, r io.Reader) (*Ref, error) {
-	return PostRaw(ctx, s, TypeBlob, r)
+func (o *Operator) PostBlob(ctx context.Context, s cadata.Store, r io.Reader) (*Ref, error) {
+	return o.PostRaw(ctx, s, TypeBlob, r)
 }
 
 // GetBlob returns an io.ReadSeeker for accessing data from the blob at x
-func GetBlob(ctx context.Context, s cadata.Store, x Ref) (*Reader, error) {
-	return GetRaw(ctx, s, TypeBlob, x)
+func (o *Operator) GetBlob(ctx context.Context, s cadata.Store, x Ref) (*Reader, error) {
+	return o.GetRaw(ctx, s, TypeBlob, x)
 }
 
 // GetBlobBytes reads the entire contents of the blob at x into memory and returns the slice of bytes.
-func GetBlobBytes(ctx context.Context, s cadata.Store, x Ref) ([]byte, error) {
-	r, err := GetBlob(ctx, s, x)
+func (o *Operator) GetBlobBytes(ctx context.Context, s cadata.Store, x Ref) ([]byte, error) {
+	r, err := o.GetBlob(ctx, s, x)
 	if err != nil {
 		return nil, err
 	}
@@ -35,9 +35,9 @@ type BlobWriter struct {
 	fpw   *FPWriter
 }
 
-func NewBlobWriter(ctx context.Context, s cadata.Store) *BlobWriter {
+func (o *Operator) NewBlobWriter(ctx context.Context, s cadata.Store) *BlobWriter {
 	return &BlobWriter{
-		inner: bfop.NewWriter(ctx, s, DefaultBlockSize, makeSalt(nil, TypeBlob)),
+		inner: o.bfop.NewWriter(ctx, s, DefaultBlockSize, o.makeSalt(TypeBlob)),
 		fpw:   NewFPWriter(),
 	}
 }
