@@ -10,23 +10,33 @@ import (
 
 type Option func(*Operator)
 
+// WithSalt sets the salt used for deriving encryption keys.
 func WithSalt(salt [32]byte) Option {
 	return func(o *Operator) {
 		o.salt = &salt
 	}
 }
 
+// WithCompression sets the compression algorithm to use when creating blobs.
+func WithCompression(cc bigfile.CompressionCodec) Option {
+	return func(o *Operator) {
+		o.compCodec = cc
+	}
+}
+
 type Operator struct {
-	salt *[32]byte
+	salt      *[32]byte
+	compCodec bigfile.CompressionCodec
 
 	bfop bigfile.Operator
 }
 
 func NewOperator(opts ...Option) Operator {
 	o := Operator{
-		salt: new([32]byte),
+		salt:      new([32]byte),
+		compCodec: bigfile.CompressSnappy,
 	}
-	o.bfop = bigfile.NewOperator()
+	o.bfop = bigfile.NewOperator(bigfile.WithCompression(o.compCodec))
 	return o
 }
 
@@ -102,28 +112,33 @@ func Sync(ctx context.Context, dst, src cadata.Store, x Ref) error {
 	return defaultOp.Sync(ctx, dst, src, x)
 }
 
-func MapEntryAt(ctx context.Context, s cadata.Store, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
-	return defaultOp.MapEntryAt(ctx, s, root, p, f)
-}
-
 // FilterPaths returns a version of root with paths filtered using f as a predicate.
 // If f returns true for a path it will be included in the output, otherwise it will not.
 func FilterPaths(ctx context.Context, s cadata.Store, root Ref, f func(string) bool) (*Ref, error) {
 	return defaultOp.FilterPaths(ctx, s, root, f)
 }
 
+// ShardLeaves calls ShardLeaves on the default Operator
 func ShardLeaves(ctx context.Context, s cadata.Store, root Ref, n int) ([]Ref, error) {
 	return defaultOp.ShardLeaves(ctx, s, root, n)
 }
 
+// MapBlobs calls MapBlobs on the default Operator
 func MapBlobs(ctx context.Context, s cadata.Store, root Ref, f BlobMapper) (*Ref, error) {
 	return defaultOp.MapBlobs(ctx, s, root, f)
 }
 
+// MapLeaves calls MapLeaves on the default Operator
 func MapLeaves(ctx context.Context, s cadata.Store, root Ref, f RefMapper) (*Ref, error) {
 	return defaultOp.MapLeaves(ctx, s, root, f)
 }
 
+// MapEntryAt calls MapEntryAt on the default Operator
+func MapEntryAt(ctx context.Context, s cadata.Store, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
+	return defaultOp.MapEntryAt(ctx, s, root, p, f)
+}
+
+// Merge calls Merge on the default Operator
 func Merge(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
 	return defaultOp.Merge(ctx, store, layers...)
 }

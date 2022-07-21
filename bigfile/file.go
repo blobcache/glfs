@@ -29,7 +29,7 @@ func (o *Operator) ReadAt(ctx context.Context, s cadata.Store, x Root, offset in
 	if err != nil {
 		return n, err
 	}
-	if err := o.get(ctx, s, *ref, func(data []byte) error {
+	if err := o.getF(ctx, s, *ref, func(data []byte) error {
 		n = copy(buf[n:], data[relOffset:])
 		offset += int64(n)
 		return nil
@@ -47,7 +47,7 @@ func (o *Operator) getPiece(ctx context.Context, s cadata.Store, root Ref, bf, l
 		return &root, nil
 	}
 	var ref Ref
-	if err := o.get(ctx, s, root, func(data []byte) error {
+	if err := o.getF(ctx, s, root, func(data []byte) error {
 		idx, err := newIndexUsing(data, bf*maxRefSize)
 		if err != nil {
 			return err
@@ -264,7 +264,7 @@ func (o *Operator) Sync(ctx context.Context, dst, src cadata.Store, x Root, fn f
 
 func (o *Operator) sync(ctx context.Context, dst, src cadata.Store, blockSize uint64, ref Ref, level int) error {
 	if level > 0 {
-		if err := o.get(ctx, src, ref, func(data []byte) error {
+		if err := o.getF(ctx, src, ref, func(data []byte) error {
 			idx, err := newIndexUsing(data, int(blockSize))
 			if err != nil {
 				return err

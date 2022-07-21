@@ -105,7 +105,7 @@ func marshalRef(x Ref) []byte {
 }
 
 func (o *Operator) post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*Ref, error) {
-	compressCodec, compData, err := compress(CompressSnappy, ptext)
+	compressCodec, compData, err := o.compress(ptext)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (o *Operator) post(ctx context.Context, s cadata.Store, salt *[32]byte, pte
 	}, nil
 }
 
-func (o *Operator) get(ctx context.Context, s cadata.Store, ref Ref, fn func([]byte) error) error {
+func (o *Operator) getF(ctx context.Context, s cadata.Store, ref Ref, fn func([]byte) error) error {
 	if value, ok := o.cache.Get(ref.Key()); ok {
 		return fn(value.([]byte))
 	}
@@ -143,7 +143,8 @@ func (o *Operator) get(ctx context.Context, s cadata.Store, ref Ref, fn func([]b
 	return fn(data)
 }
 
-func compress(codec CompressionCodec, src []byte) (CompressionCodec, []byte, error) {
+func (o *Operator) compress(src []byte) (CompressionCodec, []byte, error) {
+	codec := o.compCodec
 	buf := bytes.Buffer{}
 	switch codec {
 	case "", CompressNone:

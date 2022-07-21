@@ -16,7 +16,7 @@ func TestRefPostGet(t *testing.T) {
 	testData := "test data"
 	ref, err := op.post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)
-	err = op.get(ctx, s, *ref, func(data []byte) error {
+	err = op.getF(ctx, s, *ref, func(data []byte) error {
 		require.Equal(t, testData, string(data))
 		return nil
 	})
