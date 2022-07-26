@@ -105,10 +105,13 @@ func marshalRef(x Ref) []byte {
 }
 
 func (o *Operator) post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*Ref, error) {
-	compressCodec, compData, err := o.compress(ptext)
+	buf := o.acquireBuffer()
+	defer o.releaseBuffer(buf)
+	compressCodec, err := o.compress(buf, ptext)
 	if err != nil {
 		return nil, err
 	}
+	compData := buf.Bytes()
 	ctext := make([]byte, len(compData))
 	dek := encrypt(salt, ctext, compData)
 	cid, err := s.Post(ctx, ctext)
@@ -143,35 +146,41 @@ func (o *Operator) getF(ctx context.Context, s cadata.Store, ref Ref, fn func([]
 	return fn(data)
 }
 
-func (o *Operator) compress(src []byte) (CompressionCodec, []byte, error) {
+func (o *Operator) compress(buf *bytes.Buffer, src []byte) (CompressionCodec, error) {
 	codec := o.compCodec
-	buf := bytes.Buffer{}
 	switch codec {
 	case "", CompressNone:
-		return CompressNone, src, nil
+		if _, err := buf.Write(src); err != nil {
+			return "", err
+		}
+		return CompressNone, nil
 	case CompressZlib:
-		w := zlib.NewWriter(&buf)
+		w := zlib.NewWriter(buf)
 		if _, err := w.Write(src); err != nil {
-			return "", nil, err
+			return "", err
 		}
 		if err := w.Close(); err != nil {
-			return "", nil, err
+			return "", err
 		}
 	case CompressSnappy:
-		w := snappy.NewBufferedWriter(&buf)
+		w := snappy.NewBufferedWriter(buf)
 		if _, err := w.Write(src); err != nil {
-			return "", nil, err
+			return "", err
 		}
 		if err := w.Close(); err != nil {
-			return "", nil, err
+			return "", err
 		}
 	default:
 		panic(codec)
 	}
 	if buf.Len() >= len(src) {
-		return CompressNone, src, nil
+		buf.Reset()
+		if _, err := buf.Write(src); err != nil {
+			return "", err
+		}
+		return CompressNone, nil
 	}
-	return codec, buf.Bytes(), nil
+	return codec, nil
 }
 
 func decompress(codec CompressionCodec, src []byte) ([]byte, error) {
