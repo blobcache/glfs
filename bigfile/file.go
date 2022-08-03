@@ -74,7 +74,11 @@ type Writer struct {
 	buf     []byte
 }
 
-func (o *Operator) NewWriter(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte) *Writer {
+func (o *Operator) NewWriter(ctx context.Context, s cadata.Store, salt *[32]byte) *Writer {
+	blockSize := s.MaxSize()
+	if o.blockSize > 0 {
+		blockSize = o.blockSize
+	}
 	if blockSize > s.MaxSize() {
 		panic(fmt.Sprintf("blockSize %d > maxSize %d", blockSize, s.MaxSize()))
 	}
@@ -191,7 +195,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 
 // Create creates a Blob and returns it's Root.
 func (o *Operator) Create(ctx context.Context, s cadata.Store, salt *[32]byte, r io.Reader) (*Root, error) {
-	w := o.NewWriter(ctx, s, s.MaxSize(), salt)
+	w := o.NewWriter(ctx, s, salt)
 	if _, err := io.Copy(w, r); err != nil {
 		return nil, err
 	}
@@ -292,7 +296,7 @@ func (o *Operator) Concat(ctx context.Context, s cadata.Store, blockSize int, sa
 		rs[i] = o.NewReader(ctx, s, roots[i])
 	}
 	mr := io.MultiReader(rs...)
-	w := o.NewWriter(ctx, s, blockSize, salt)
+	w := o.NewWriter(ctx, s, salt)
 	if _, err := io.Copy(w, mr); err != nil {
 		return nil, err
 	}

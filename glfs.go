@@ -52,7 +52,7 @@ func (a Ref) Equals(b Ref) bool {
 // This can be used to extend the types provided by glfs, without interfering with syncing.
 func (o *Operator) PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, error) {
 	fpw := NewFPWriter()
-	bw := o.bfop.NewWriter(ctx, s, s.MaxSize(), o.makeSalt(ty))
+	bw := o.bfop.NewWriter(ctx, s, o.makeSalt(ty))
 	mw := io.MultiWriter(bw, fpw)
 	if _, err := io.Copy(mw, r); err != nil {
 		return nil, err

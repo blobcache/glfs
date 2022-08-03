@@ -26,6 +26,7 @@ func WithCompression(cc bigfile.CompressionCodec) Option {
 
 type Operator struct {
 	salt      *[32]byte
+	blockSize int
 	compCodec bigfile.CompressionCodec
 
 	bfop bigfile.Operator
@@ -34,9 +35,10 @@ type Operator struct {
 func NewOperator(opts ...Option) Operator {
 	o := Operator{
 		salt:      new([32]byte),
+		blockSize: DefaultBlockSize,
 		compCodec: bigfile.CompressSnappy,
 	}
-	o.bfop = bigfile.NewOperator(bigfile.WithCompression(o.compCodec))
+	o.bfop = bigfile.NewOperator(bigfile.WithBlockSize(o.blockSize), bigfile.WithCompression(o.compCodec))
 	return o
 }
 

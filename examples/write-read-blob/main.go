@@ -13,7 +13,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	s := cadata.NewMem(cadata.DefaultHash, cadata.DefaultMaxSize)
+	s := cadata.NewMem(cadata.DefaultHash, glfs.DefaultBlockSize)
 	ref, err := glfs.PostBlob(ctx, s, strings.NewReader("test data"))
 	if err != nil {
 		log.Fatal(err)

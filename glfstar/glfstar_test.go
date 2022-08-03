@@ -32,7 +32,7 @@ func TestReadTAR(t *testing.T) {
 		tc := tc
 		t.Run(path.Base(tc), func(t *testing.T) {
 			ctx := context.Background()
-			s := cadata.NewMem(cadata.DefaultHash, cadata.DefaultMaxSize)
+			s := newStore(t)
 			withTARStream(t, tc, func(tr *tar.Reader) {
 				ref, err := ReadTAR(ctx, s, tr)
 				require.Nil(t, err)
@@ -52,7 +52,7 @@ func TestWriteRead(t *testing.T) {
 	}
 	i := 0
 	ctx := context.Background()
-	s := cadata.NewMem(cadata.DefaultHash, cadata.DefaultMaxSize)
+	s := newStore(t)
 	withTARStream(t, corpus[i], func(tr *tar.Reader) {
 		expected, err := ReadTAR(ctx, s, tr)
 		require.NoError(t, err)
@@ -116,4 +116,8 @@ func ensureData(u string) (*os.File, error) {
 		return nil, err
 	}
 	return os.Open(p)
+}
+
+func newStore(t testing.TB) cadata.Store {
+	return cadata.NewMem(cadata.DefaultHash, glfs.DefaultBlockSize)
 }

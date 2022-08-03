@@ -1,7 +1,6 @@
 package bigfile
 
 import (
-	"bytes"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -24,9 +23,22 @@ func WithCompression(cc CompressionCodec) Option {
 	}
 }
 
+// WithBlockSize sets the block size used when writing files.
+// If n < 0 then WithBlockSize panics
+// If n == 0 then the stores MaxBlobSize will be used as a default.
+func WithBlockSize(n int) Option {
+	if n < 0 {
+		panic(n)
+	}
+	return func(o *Operator) {
+		o.blockSize = n
+	}
+}
+
 type Operator struct {
 	cacheSize int
 	compCodec CompressionCodec
+	blockSize int
 
 	cache   *lru.Cache
 	bufPool sync.Pool
@@ -38,7 +50,7 @@ func NewOperator(opts ...Option) Operator {
 		compCodec: CompressSnappy,
 		bufPool: sync.Pool{
 			New: func() interface{} {
-				return &bytes.Buffer{}
+				return []byte(nil)
 			},
 		},
 	}
@@ -49,14 +61,15 @@ func NewOperator(opts ...Option) Operator {
 	return o
 }
 
-func (o *Operator) acquireBuffer() *bytes.Buffer {
-	x := o.bufPool.Get().(*bytes.Buffer)
-	x.Reset()
+func (o *Operator) acquireBuffer(n int) []byte {
+	x := o.bufPool.Get().([]byte)
+	if len(x) < n {
+		x = append(x, make([]byte, n-len(x))...)
+	}
 	return x
 }
 
-func (o *Operator) releaseBuffer(x *bytes.Buffer) {
-	x.Reset()
+func (o *Operator) releaseBuffer(x []byte) {
 	o.bufPool.Put(x)
 }
 

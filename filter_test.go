@@ -11,7 +11,7 @@ import (
 
 func TestShardLeaves(t *testing.T) {
 	ctx := context.Background()
-	s := cadata.NewMem(cadata.DefaultHash, cadata.DefaultMaxSize)
+	s := newStore(t)
 	testCases := []map[string]Ref{
 		{
 			"dir1/file1.1": blobRef(),
@@ -41,4 +41,8 @@ func generateTree(n int) map[string]Ref {
 		m[p] = blobRef()
 	}
 	return m
+}
+
+func newStore(t testing.TB) cadata.Store {
+	return cadata.NewMem(cadata.DefaultHash, DefaultBlockSize)
 }

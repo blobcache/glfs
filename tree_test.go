@@ -47,7 +47,7 @@ func TestTreeMarshalUnmarshal(t *testing.T) {
 
 func TestPostTreeFromEntries(t *testing.T) {
 	ctx := context.TODO()
-	s := cadata.NewMem(cadata.DefaultHash, cadata.DefaultMaxSize)
+	s := newStore(t)
 	m1 := map[string]Ref{
 		"dir1/file1.1": blobRef(),
 		"dir1/file1.2": blobRef(),
@@ -63,7 +63,7 @@ func TestPostTreeFromEntries(t *testing.T) {
 
 func TestMergeSubtrees(t *testing.T) {
 	ctx := context.TODO()
-	s := cadata.NewMem(cadata.DefaultHash, cadata.DefaultMaxSize)
+	s := newStore(t)
 	ms := []map[string]Ref{
 		{
 			"dir1/file1.1": blobRef(),

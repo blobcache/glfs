@@ -2,11 +2,9 @@ package bigfile
 
 import (
 	"bytes"
-	"compress/zlib"
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/brendoncarroll/go-state/cadata"
@@ -20,9 +18,9 @@ type CompressionCodec string
 
 const (
 	CompressNone   = CompressionCodec("none")
-	CompressZlib   = CompressionCodec("zlib")
 	CompressSnappy = CompressionCodec("snap")
 
+	// CompressZlib   = CompressionCodec("zlib")
 	// CompressGzip = CompressionCodec("gzip")
 	// CompressZstd = CompressionCodec("zstd")
 )
@@ -105,13 +103,12 @@ func marshalRef(x Ref) []byte {
 }
 
 func (o *Operator) post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*Ref, error) {
-	buf := o.acquireBuffer()
+	buf := o.acquireBuffer(len(ptext))
 	defer o.releaseBuffer(buf)
-	compressCodec, err := o.compress(buf, ptext)
+	compressCodec, compData, err := o.compress(buf[:0], ptext)
 	if err != nil {
 		return nil, err
 	}
-	compData := buf.Bytes()
 	ctext := make([]byte, len(compData))
 	dek := encrypt(salt, ctext, compData)
 	cid, err := s.Post(ctx, ctext)
@@ -138,7 +135,7 @@ func (o *Operator) getF(ctx context.Context, s cadata.Store, ref Ref, fn func([]
 		return err
 	}
 	cryptoXOR(ref.DEK, buf[:n], buf[:n])
-	data, err := decompress(ref.Compress, buf[:n])
+	data, err := decompress(ref.Compress, nil, buf[:n])
 	if err != nil {
 		return err
 	}
@@ -146,59 +143,30 @@ func (o *Operator) getF(ctx context.Context, s cadata.Store, ref Ref, fn func([]
 	return fn(data)
 }
 
-func (o *Operator) compress(buf *bytes.Buffer, src []byte) (CompressionCodec, error) {
+func (o *Operator) compress(out []byte, src []byte) (CompressionCodec, []byte, error) {
 	codec := o.compCodec
 	switch codec {
 	case "", CompressNone:
-		if _, err := buf.Write(src); err != nil {
-			return "", err
-		}
-		return CompressNone, nil
-	case CompressZlib:
-		w := zlib.NewWriter(buf)
-		if _, err := w.Write(src); err != nil {
-			return "", err
-		}
-		if err := w.Close(); err != nil {
-			return "", err
-		}
+		out = append(out, src...)
+		return CompressNone, out, nil
 	case CompressSnappy:
-		w := snappy.NewBufferedWriter(buf)
-		if _, err := w.Write(src); err != nil {
-			return "", err
-		}
-		if err := w.Close(); err != nil {
-			return "", err
-		}
+		out = snappy.Encode(out, src)
 	default:
 		panic(codec)
 	}
-	if buf.Len() >= len(src) {
-		buf.Reset()
-		if _, err := buf.Write(src); err != nil {
-			return "", err
-		}
-		return CompressNone, nil
+	if len(out) >= len(src) {
+		return CompressNone, src, nil
 	}
-	return codec, nil
+	return codec, out, nil
 }
 
-func decompress(codec CompressionCodec, src []byte) ([]byte, error) {
+func decompress(codec CompressionCodec, out, src []byte) ([]byte, error) {
 	switch codec {
 	case "", CompressNone:
-		return src, nil
-	case CompressZlib:
-		buf := bytes.NewReader(src)
-		rc, err := zlib.NewReader(buf)
-		if err != nil {
-			return nil, err
-		}
-		defer rc.Close()
-		return ioutil.ReadAll(rc)
+		out = append(out, src...)
+		return out, nil
 	case CompressSnappy:
-		br := bytes.NewReader(src)
-		sr := snappy.NewReader(br)
-		return ioutil.ReadAll(sr)
+		return snappy.Decode(out, src)
 	default:
 		return nil, errors.Errorf("codec not recognized: %s", codec)
 	}
