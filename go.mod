@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/brendoncarroll/go-state v0.0.0-20220617134034-2613fe050888
-	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.1
