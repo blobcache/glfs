@@ -17,17 +17,9 @@ func WithSalt(salt [32]byte) Option {
 	}
 }
 
-// WithCompression sets the compression algorithm to use when creating blobs.
-func WithCompression(cc bigfile.CompressionCodec) Option {
-	return func(o *Operator) {
-		o.compCodec = cc
-	}
-}
-
 type Operator struct {
 	salt      *[32]byte
 	blockSize int
-	compCodec bigfile.CompressionCodec
 
 	bfop bigfile.Operator
 }
@@ -36,9 +28,8 @@ func NewOperator(opts ...Option) Operator {
 	o := Operator{
 		salt:      new([32]byte),
 		blockSize: DefaultBlockSize,
-		compCodec: bigfile.CompressSnappy,
 	}
-	o.bfop = bigfile.NewOperator(bigfile.WithBlockSize(o.blockSize), bigfile.WithCompression(o.compCodec))
+	o.bfop = bigfile.NewOperator(bigfile.WithBlockSize(o.blockSize))
 	return o
 }
 

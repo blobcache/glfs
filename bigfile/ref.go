@@ -8,21 +8,9 @@ import (
 	"strings"
 
 	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/golang/snappy"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/chacha20"
 	"lukechampine.com/blake3"
-)
-
-type CompressionCodec string
-
-const (
-	CompressNone   = CompressionCodec("none")
-	CompressSnappy = CompressionCodec("snap")
-
-	// CompressZlib   = CompressionCodec("zlib")
-	// CompressGzip = CompressionCodec("gzip")
-	// CompressZstd = CompressionCodec("zstd")
 )
 
 const DEKSize = 32
@@ -43,13 +31,12 @@ func (dek *DEK) UnmarshalJSON(data []byte) error {
 }
 
 // RefSize is the size of a Ref marshalled to binary
-const RefSize = cadata.IDSize + DEKSize + 4
+const RefSize = cadata.IDSize + DEKSize
 
 // Ref is a reference to data in a content-addressed store
 type Ref struct {
-	CID      cadata.ID        `json:"cid"`
-	DEK      DEK              `json:"dek"`
-	Compress CompressionCodec `json:"compress"`
+	CID cadata.ID `json:"cid"`
+	DEK DEK       `json:"dek"`
 }
 
 func RefFromBytes(x []byte) (*Ref, error) {
@@ -58,36 +45,22 @@ func RefFromBytes(x []byte) (*Ref, error) {
 	}
 	r := Ref{}
 	br := bytes.NewReader(x)
-	compressCodec := [4]byte{}
 	for _, slice := range [][]byte{
 		r.CID[:],
 		r.DEK[:],
-		compressCodec[:],
 	} {
 		if _, err := io.ReadFull(br, slice); err != nil {
 			return nil, err
 		}
 	}
-	r.Compress = CompressionCodec(compressCodec[:])
 	return &r, nil
 }
 
 func (r Ref) MarshalBinary() ([]byte, error) {
-	if len(r.Compress) != 4 {
-		return nil, errors.Errorf("invalid CompressCodec %v", r.Compress)
-	}
 	buf := make([]byte, 0, RefSize)
 	buf = append(buf, r.CID[:]...)
 	buf = append(buf, r.DEK[:]...)
-	buf = append(buf, []byte(r.Compress)...)
 	return buf, nil
-}
-
-func (r Ref) GetCompression() CompressionCodec {
-	if r.Compress == "" {
-		return CompressNone
-	}
-	return r.Compress
 }
 
 func (r Ref) Key() (ret [32]byte) {
@@ -105,20 +78,15 @@ func marshalRef(x Ref) []byte {
 func (o *Operator) post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*Ref, error) {
 	buf := o.acquireBuffer(len(ptext))
 	defer o.releaseBuffer(buf)
-	compressCodec, compData, err := o.compress(buf[:0], ptext)
-	if err != nil {
-		return nil, err
-	}
-	ctext := make([]byte, len(compData))
-	dek := encrypt(salt, ctext, compData)
+	ctext := make([]byte, len(ptext))
+	dek := encrypt(salt, ctext, ptext)
 	cid, err := s.Post(ctx, ctext)
 	if err != nil {
 		return nil, err
 	}
 	return &Ref{
-		CID:      cid,
-		DEK:      dek,
-		Compress: compressCodec,
+		CID: cid,
+		DEK: dek,
 	}, nil
 }
 
@@ -135,41 +103,9 @@ func (o *Operator) getF(ctx context.Context, s cadata.Store, ref Ref, fn func([]
 		return err
 	}
 	cryptoXOR(ref.DEK, buf[:n], buf[:n])
-	data, err := decompress(ref.Compress, nil, buf[:n])
-	if err != nil {
-		return err
-	}
+	data := buf[:n]
 	o.cache.Add(ref.Key(), data)
 	return fn(data)
-}
-
-func (o *Operator) compress(out []byte, src []byte) (CompressionCodec, []byte, error) {
-	codec := o.compCodec
-	switch codec {
-	case "", CompressNone:
-		out = append(out, src...)
-		return CompressNone, out, nil
-	case CompressSnappy:
-		out = snappy.Encode(out, src)
-	default:
-		panic(codec)
-	}
-	if len(out) >= len(src) {
-		return CompressNone, src, nil
-	}
-	return codec, out, nil
-}
-
-func decompress(codec CompressionCodec, out, src []byte) ([]byte, error) {
-	switch codec {
-	case "", CompressNone:
-		out = append(out, src...)
-		return out, nil
-	case CompressSnappy:
-		return snappy.Decode(out, src)
-	default:
-		return nil, errors.Errorf("codec not recognized: %s", codec)
-	}
 }
 
 func encrypt(salt *[32]byte, ctext, ptext []byte) DEK {

@@ -133,9 +133,7 @@ func blobRef() Ref {
 	return Ref{
 		Type: TypeBlob,
 		Root: bigfile.Root{
-			Ref: bigfile.Ref{
-				Compress: bigfile.CompressNone,
-			},
+			Ref: bigfile.Ref{},
 		},
 	}
 }

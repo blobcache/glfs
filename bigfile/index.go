@@ -3,7 +3,7 @@ package bigfile
 import "github.com/pkg/errors"
 
 // maxRefSize is the size of a slot in an index
-const maxRefSize = 128
+const maxRefSize = RefSize
 
 type Index struct {
 	x []byte

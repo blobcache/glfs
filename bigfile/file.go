@@ -17,7 +17,7 @@ type Root struct {
 }
 
 func (r Root) String() string {
-	return fmt.Sprintf("{%s %s %s}", r.Ref.CID.String()[:8], "chacha20", r.Ref.Compress)
+	return fmt.Sprintf("{%s %s}", r.Ref.CID.String()[:8], "chacha20")
 }
 
 func (o *Operator) ReadAt(ctx context.Context, s cadata.Store, x Root, offset int64, buf []byte) (n int, err error) {

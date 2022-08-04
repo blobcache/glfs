@@ -14,15 +14,6 @@ func WithCacheSize(n int) Option {
 	}
 }
 
-func WithCompression(cc CompressionCodec) Option {
-	if len(cc) > 4 {
-		panic(cc)
-	}
-	return func(o *Operator) {
-		o.compCodec = cc
-	}
-}
-
 // WithBlockSize sets the block size used when writing files.
 // If n < 0 then WithBlockSize panics
 // If n == 0 then the stores MaxBlobSize will be used as a default.
@@ -37,7 +28,6 @@ func WithBlockSize(n int) Option {
 
 type Operator struct {
 	cacheSize int
-	compCodec CompressionCodec
 	blockSize int
 
 	cache   *lru.Cache
@@ -47,7 +37,6 @@ type Operator struct {
 func NewOperator(opts ...Option) Operator {
 	o := Operator{
 		cacheSize: 64,
-		compCodec: CompressSnappy,
 		bufPool: sync.Pool{
 			New: func() interface{} {
 				return []byte(nil)
