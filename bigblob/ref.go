@@ -1,32 +1,40 @@
-package bigfile
+package bigblob
 
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
 	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/chacha20"
 	"lukechampine.com/blake3"
 )
+
+var encoding = base64.NewEncoding(cadata.Base64Alphabet)
 
 const DEKSize = 32
 
 type DEK [DEKSize]byte
 
-func (dek DEK) MarshalJSON() ([]byte, error) {
-	return json.Marshal(dek[:])
+func (dek DEK) MarshalJSON() (ret []byte, _ error) {
+	return json.Marshal(encoding.EncodeToString(dek[:]))
 }
 
 func (dek *DEK) UnmarshalJSON(data []byte) error {
-	var slice []byte
-	if err := json.Unmarshal(data, &slice); err != nil {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
-	copy(dek[:], slice)
+	data, err := encoding.DecodeString(s)
+	if err != nil {
+		return err
+	}
+	copy(dek[:], data)
 	return nil
 }
 
@@ -41,7 +49,7 @@ type Ref struct {
 
 func RefFromBytes(x []byte) (*Ref, error) {
 	if len(x) < RefSize {
-		return nil, errors.Errorf("too small to be ref len=%d", len(x))
+		return nil, fmt.Errorf("too small to be ref len=%d", len(x))
 	}
 	r := Ref{}
 	br := bytes.NewReader(x)
@@ -64,10 +72,12 @@ func (r Ref) MarshalBinary() ([]byte, error) {
 }
 
 func (r Ref) Key() (ret [32]byte) {
-	for i := range ret {
-		ret[i] = r.CID[i] ^ r.DEK[i]
-	}
-	return ret
+	buf, _ := r.MarshalBinary()
+	return blake3.Sum256(buf[:])
+}
+
+func (r1 Ref) Equals(r2 Ref) bool {
+	return hmac.Equal(r1.CID[:], r2.CID[:]) && hmac.Equal(r1.DEK[:], r2.DEK[:])
 }
 
 func marshalRef(x Ref) []byte {

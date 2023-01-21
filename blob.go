@@ -4,11 +4,11 @@ import (
 	"context"
 	"io"
 
-	"github.com/blobcache/glfs/bigfile"
+	"github.com/blobcache/glfs/bigblob"
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
-type Reader = bigfile.Reader
+type Reader = bigblob.Reader
 
 // PostBlob creates a new blob with data from r, and returns a Ref to it.
 func (o *Operator) PostBlob(ctx context.Context, s cadata.Store, r io.Reader) (*Ref, error) {
@@ -31,20 +31,18 @@ func (o *Operator) GetBlobBytes(ctx context.Context, s cadata.Store, x Ref) ([]b
 
 // BlobWriter writes a blob
 type BlobWriter struct {
-	inner *bigfile.Writer
-	fpw   *FPWriter
+	inner *bigblob.Writer
 }
 
 func (o *Operator) NewBlobWriter(ctx context.Context, s cadata.Store) *BlobWriter {
 	return &BlobWriter{
 		inner: o.bfop.NewWriter(ctx, s, o.makeSalt(TypeBlob)),
-		fpw:   NewFPWriter(),
 	}
 }
 
 // Write adds data to the blob being written.
 func (bw *BlobWriter) Write(data []byte) (int, error) {
-	return io.MultiWriter(bw.inner, bw.fpw).Write(data)
+	return bw.inner.Write(data)
 }
 
 // Finish completes the blob and returns a reference to it.
@@ -54,8 +52,7 @@ func (bw *BlobWriter) Finish(ctx context.Context) (*Ref, error) {
 		return nil, err
 	}
 	return &Ref{
-		Type:        TypeBlob,
-		Root:        *root,
-		Fingerprint: bw.fpw.Finish(),
+		Type: TypeBlob,
+		Root: *root,
 	}, nil
 }

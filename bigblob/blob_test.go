@@ -1,4 +1,4 @@
-package bigfile
+package bigblob
 
 import (
 	"bufio"

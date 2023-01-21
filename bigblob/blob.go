@@ -1,4 +1,4 @@
-package bigfile
+package bigblob
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
-// Root is the root of a file represented as a tree of content-addressed blocks
+// Root is the root of a blob represented as a tree of fixed sized content-addressed blocks
 type Root struct {
 	Ref
 	Size      uint64 `json:"size"`
@@ -18,6 +18,10 @@ type Root struct {
 
 func (r Root) String() string {
 	return fmt.Sprintf("{%s %s}", r.Ref.CID.String()[:8], "chacha20")
+}
+
+func (r1 Root) Equals(r2 Root) bool {
+	return r1.Size == r2.Size && r1.BlockSize == r2.BlockSize && r1.Ref.Equals(r2.Ref)
 }
 
 func (o *Operator) ReadAt(ctx context.Context, s cadata.Store, x Root, offset int64, buf []byte) (n int, err error) {

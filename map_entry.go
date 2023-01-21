@@ -2,10 +2,12 @@ package glfs
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"errors"
+
 	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/pkg/errors"
 )
 
 type TreeEntryMapper func(ent TreeEntry) (*TreeEntry, error)
@@ -49,7 +51,7 @@ func (o *Operator) MapEntryAt(ctx context.Context, s cadata.Store, root Ref, p s
 		if len(parts) == 1 {
 			var ent2 *TreeEntry
 			if ent == nil {
-				return nil, errors.Errorf("name %s not found in tree", parts[0])
+				return nil, fmt.Errorf("name %s not found in tree", parts[0])
 			}
 			ent2, err = f(*ent)
 			if err != nil {
@@ -67,6 +69,6 @@ func (o *Operator) MapEntryAt(ctx context.Context, s cadata.Store, root Ref, p s
 		}
 		return o.PostTree(ctx, s, *tree)
 	default:
-		return nil, errors.Errorf("MapEntry cannot traverse object type: %s", root.Type)
+		return nil, fmt.Errorf("MapEntry cannot traverse object type: %s", root.Type)
 	}
 }

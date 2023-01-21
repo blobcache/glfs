@@ -3,10 +3,10 @@ package glfs
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/pkg/errors"
 )
 
 // Tree is a directory of entries to other trees or blobs
@@ -63,7 +62,7 @@ func (t *Tree) UnmarshalText(x []byte) error {
 		ent := TreeEntry{}
 		if err := json.Unmarshal(line, &ent); err != nil {
 			log.Println("line:", string(line))
-			err = errors.Wrap(err, "error unmarshaling tree")
+			err = fmt.Errorf("unmarshaling tree: %w", err)
 			return err
 		}
 		entries = append(entries, ent)
@@ -107,7 +106,7 @@ func (t *Tree) sorter(i, j int) bool {
 func (t *Tree) checkDuplicates() error {
 	for i := 0; i < len(t.Entries)-1; i++ {
 		if t.Entries[i].Name == t.Entries[i+1].Name {
-			return errors.Errorf("duplicate tree entry %v %v", t.Entries[i], t.Entries[i+1])
+			return fmt.Errorf("duplicate tree entry %v %v", t.Entries[i], t.Entries[i+1])
 		}
 	}
 	return nil
@@ -123,7 +122,7 @@ type TreeEntry struct {
 func (te *TreeEntry) Validate() error {
 	cleaned := CleanPath(te.Name)
 	if cleaned != te.Name {
-		return errors.Errorf("name (%s) is not properly cleaned", te.Name)
+		return fmt.Errorf("name (%s) is not properly cleaned", te.Name)
 	}
 	if te.Name == "" {
 		return errors.New("TreeEntry name cannot be empty")
@@ -169,32 +168,9 @@ func (o *Operator) PostTree(ctx context.Context, store cadata.Store, t Tree) (*R
 		return nil, err
 	}
 	return &Ref{
-		Type:        TypeTree,
-		Root:        *root,
-		Fingerprint: computeTreeFingerprint(t),
+		Type: TypeTree,
+		Root: *root,
 	}, nil
-}
-
-func computeTreeFingerprint(t Tree) Fingerprint {
-	var innerFP Fingerprint
-	for _, te := range t.Entries {
-		fpw := NewFPWriter()
-		if _, err := fpw.Write([]byte(te.Name)); err != nil {
-			panic(err)
-		}
-		if err := binary.Write(fpw, binary.BigEndian, uint32(te.FileMode)); err != nil {
-			panic(err)
-		}
-		if _, err := fpw.Write(te.Ref.Fingerprint[:]); err != nil {
-			panic(err)
-		}
-		fp2 := fpw.Finish()
-		xorFingerprint(&innerFP, innerFP, fp2)
-	}
-	fpw := NewFPWriter()
-	fpw.Write([]byte("tree"))
-	fpw.Write(innerFP[:])
-	return fpw.Finish()
 }
 
 // GetTree retreives the tree in store at Ref if it exists.
@@ -209,7 +185,7 @@ func (o *Operator) GetTree(ctx context.Context, store cadata.Store, ref Ref) (*T
 
 func readTree(r io.Reader) (*Tree, error) {
 	tree := &Tree{}
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}

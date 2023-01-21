@@ -2,10 +2,12 @@ package glfs
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/blobcache/glfs/bigfile"
+	"errors"
+
+	"github.com/blobcache/glfs/bigblob"
 	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/pkg/errors"
 )
 
 // Merge merges the refs in layers with increasing prescedence.
@@ -94,7 +96,7 @@ func (o *Operator) concat2(ctx context.Context, store cadata.Store, left, right 
 	case left.Type == TypeTree && right.Type == TypeTree:
 		return o.concat2Trees(ctx, store, left, right)
 	default:
-		return nil, errors.Errorf("can't concat types %s %s", left.Type, right.Type)
+		return nil, fmt.Errorf("can't concat types %s %s", left.Type, right.Type)
 	}
 }
 
@@ -134,7 +136,7 @@ func (o *Operator) concat2Trees(ctx context.Context, store cadata.Store, left, r
 }
 
 func (o *Operator) concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref) (*Ref, error) {
-	var roots []bigfile.Root
+	var roots []bigblob.Root
 	for _, ref := range refs {
 		roots = append(roots, ref.Root)
 	}
@@ -142,14 +144,8 @@ func (o *Operator) concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref)
 	if err != nil {
 		return nil, err
 	}
-	r := o.bfop.NewReader(ctx, s, *yRoot)
-	fp, err := FPReader(r)
-	if err != nil {
-		return nil, err
-	}
 	return &Ref{
-		Type:        TypeBlob,
-		Root:        *yRoot,
-		Fingerprint: fp,
+		Type: TypeBlob,
+		Root: *yRoot,
 	}, nil
 }

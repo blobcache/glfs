@@ -1,6 +1,6 @@
-package bigfile
+package bigblob
 
-import "github.com/pkg/errors"
+import "fmt"
 
 // maxRefSize is the size of a slot in an index
 const maxRefSize = RefSize
@@ -15,7 +15,7 @@ func newIndex(blockSize int) Index {
 
 func newIndexUsing(x []byte, blockSize int) (Index, error) {
 	if len(x) != blockSize {
-		return Index{}, errors.Errorf("data is not correct size for index")
+		return Index{}, fmt.Errorf("data is not correct size for index")
 	}
 	return Index{x: x}, nil
 }

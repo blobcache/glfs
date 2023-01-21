@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/blobcache/glfs/bigfile"
+	"github.com/blobcache/glfs/bigblob"
 	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/pkg/errors"
 )
 
 const DefaultBlockSize = 1 << 21
@@ -26,7 +25,7 @@ func ParseType(x []byte) (Type, error) {
 	case TypeBlob, TypeTree:
 		return ty, nil
 	default:
-		return "", errors.Errorf("%q is not a valid type", x)
+		return "", fmt.Errorf("%q is not a valid type", x)
 	}
 }
 
@@ -35,26 +34,22 @@ func ParseType(x []byte) (Type, error) {
 // - Blob
 type Ref struct {
 	Type Type `json:"type"`
-	bigfile.Root
-	Fingerprint Fingerprint `json:"fp"`
+	bigblob.Root
 }
 
 func (r Ref) String() string {
-	fp := r.Fingerprint
-	return fmt.Sprintf("%s %s", r.Type, fp.String()[:8])
+	return fmt.Sprintf("%s %s", r.Type, r.Root.CID.String()[:8])
 }
 
 func (a Ref) Equals(b Ref) bool {
-	return a.Type == b.Type && a.Fingerprint == b.Fingerprint
+	return a.Type == b.Type && a.Root.Equals(b.Root)
 }
 
 // PostRaw posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
 func (o *Operator) PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, error) {
-	fpw := NewFPWriter()
 	bw := o.bfop.NewWriter(ctx, s, o.makeSalt(ty))
-	mw := io.MultiWriter(bw, fpw)
-	if _, err := io.Copy(mw, r); err != nil {
+	if _, err := io.Copy(bw, r); err != nil {
 		return nil, err
 	}
 	root, err := bw.Finish(ctx)
@@ -62,9 +57,8 @@ func (o *Operator) PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Re
 		return nil, err
 	}
 	return &Ref{
-		Type:        ty,
-		Root:        *root,
-		Fingerprint: fpw.Finish(),
+		Type: ty,
+		Root: *root,
 	}, nil
 }
 

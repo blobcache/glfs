@@ -4,13 +4,13 @@ package glfstar
 import (
 	"archive/tar"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path"
 	"strings"
 
 	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/pkg/errors"
 
 	"github.com/blobcache/glfs"
 )
@@ -72,7 +72,7 @@ func WriteTAR(ctx context.Context, s cadata.Store, root glfs.Ref, tw *tar.Writer
 				return err
 			}
 		default:
-			return errors.Errorf("cannot write type %s to tar stream", ent.Ref.Type)
+			return fmt.Errorf("cannot write type %s to tar stream", ent.Ref.Type)
 		}
 		return nil
 	})

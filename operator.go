@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/blobcache/glfs/bigfile"
+	"github.com/blobcache/glfs/bigblob"
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
@@ -21,7 +21,7 @@ type Operator struct {
 	salt      *[32]byte
 	blockSize int
 
-	bfop bigfile.Operator
+	bfop bigblob.Operator
 }
 
 func NewOperator(opts ...Option) Operator {
@@ -29,13 +29,13 @@ func NewOperator(opts ...Option) Operator {
 		salt:      new([32]byte),
 		blockSize: DefaultBlockSize,
 	}
-	o.bfop = bigfile.NewOperator(bigfile.WithBlockSize(o.blockSize))
+	o.bfop = bigblob.NewOperator(bigblob.WithBlockSize(o.blockSize))
 	return o
 }
 
 func (o *Operator) makeSalt(ty Type) *[32]byte {
 	var out [32]byte
-	bigfile.DeriveKey(out[:], o.salt, []byte(ty))
+	bigblob.DeriveKey(out[:], o.salt, []byte(ty))
 	return &out
 }
 

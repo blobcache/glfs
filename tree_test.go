@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/blobcache/glfs/bigfile"
+	"github.com/blobcache/glfs/bigblob"
 	"github.com/brendoncarroll/go-state/cadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -132,8 +132,8 @@ func logRaw(t *testing.T, s cadata.Store, ref Ref) {
 func blobRef() Ref {
 	return Ref{
 		Type: TypeBlob,
-		Root: bigfile.Root{
-			Ref: bigfile.Ref{},
+		Root: bigblob.Root{
+			Ref: bigblob.Ref{},
 		},
 	}
 }

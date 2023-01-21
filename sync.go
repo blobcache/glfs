@@ -2,9 +2,9 @@ package glfs
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,6 +30,6 @@ func (o *Operator) Sync(ctx context.Context, dst, src cadata.Store, x Ref) error
 			return group.Wait()
 		})
 	default:
-		return errors.Errorf("can't sync unrecognized type %s", x.Type)
+		return fmt.Errorf("can't sync unrecognized type %s", x.Type)
 	}
 }

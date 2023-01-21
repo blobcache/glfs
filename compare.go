@@ -37,7 +37,7 @@ func (o *Operator) Compare(ctx context.Context, s cadata.Store, left, right Ref)
 		}
 		return o.compareTrees(ctx, s, *lTree, *rTree)
 	default:
-		if left.Fingerprint == right.Fingerprint {
+		if left.Equals(right) {
 			return &Diff{Both: &left}, nil
 		} else {
 			return &Diff{
