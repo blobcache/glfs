@@ -47,7 +47,7 @@ func (a Ref) Equals(b Ref) bool {
 
 // PostRaw posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
-func (o *Operator) PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, error) {
+func (o *Operator) PostRaw(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
 	bw := o.bfop.NewWriter(ctx, s, o.makeSalt(ty))
 	if _, err := io.Copy(bw, r); err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (o *Operator) PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Re
 
 // GetRaw retrieves the object in s at x.
 // If x.Type != ty, ErrRefType is returned.
-func (o *Operator) GetRaw(ctx context.Context, s cadata.Store, ty Type, x Ref) (*Reader, error) {
+func (o *Operator) GetRaw(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
 	if ty != "" && x.Type != ty {
 		return nil, ErrRefType{Have: x.Type, Want: TypeBlob}
 	}

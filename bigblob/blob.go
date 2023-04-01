@@ -24,7 +24,7 @@ func (r1 Root) Equals(r2 Root) bool {
 	return r1.Size == r2.Size && r1.BlockSize == r2.BlockSize && r1.Ref.Equals(r2.Ref)
 }
 
-func (o *Operator) ReadAt(ctx context.Context, s cadata.Store, x Root, offset int64, buf []byte) (n int, err error) {
+func (o *Operator) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset int64, buf []byte) (n int, err error) {
 	level := depth(x.Size, x.BlockSize)
 	bf := branchingFactor(x.BlockSize)
 	blockIndex := uint64(offset) / x.BlockSize
@@ -46,7 +46,7 @@ func (o *Operator) ReadAt(ctx context.Context, s cadata.Store, x Root, offset in
 	return n, nil
 }
 
-func (o *Operator) getPiece(ctx context.Context, s cadata.Store, root Ref, bf, level, blockIndex int) (*Ref, error) {
+func (o *Operator) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, level, blockIndex int) (*Ref, error) {
 	if level == 0 {
 		return &root, nil
 	}
@@ -67,7 +67,7 @@ func (o *Operator) getPiece(ctx context.Context, s cadata.Store, root Ref, bf, l
 type Writer struct {
 	ctx                context.Context
 	o                  *Operator
-	s                  cadata.Store
+	s                  cadata.Poster
 	blockSize          int
 	indexSalt, rawSalt *[32]byte
 	branchingFactor    int
@@ -78,7 +78,7 @@ type Writer struct {
 	buf     []byte
 }
 
-func (o *Operator) NewWriter(ctx context.Context, s cadata.Store, salt *[32]byte) *Writer {
+func (o *Operator) NewWriter(ctx context.Context, s cadata.Poster, salt *[32]byte) *Writer {
 	blockSize := s.MaxSize()
 	if o.blockSize > 0 {
 		blockSize = o.blockSize
@@ -198,7 +198,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 }
 
 // Create creates a Blob and returns it's Root.
-func (o *Operator) Create(ctx context.Context, s cadata.Store, salt *[32]byte, r io.Reader) (*Root, error) {
+func (o *Operator) Create(ctx context.Context, s cadata.Poster, salt *[32]byte, r io.Reader) (*Root, error) {
 	w := o.NewWriter(ctx, s, salt)
 	if _, err := io.Copy(w, r); err != nil {
 		return nil, err

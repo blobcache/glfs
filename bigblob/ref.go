@@ -85,7 +85,7 @@ func marshalRef(x Ref) []byte {
 	return data
 }
 
-func (o *Operator) post(ctx context.Context, s cadata.Store, salt *[32]byte, ptext []byte) (*Ref, error) {
+func (o *Operator) post(ctx context.Context, s cadata.Poster, salt *[32]byte, ptext []byte) (*Ref, error) {
 	buf := o.acquireBuffer(len(ptext))
 	defer o.releaseBuffer(buf)
 	ctext := make([]byte, len(ptext))
@@ -100,7 +100,7 @@ func (o *Operator) post(ctx context.Context, s cadata.Store, salt *[32]byte, pte
 	}, nil
 }
 
-func (o *Operator) getF(ctx context.Context, s cadata.Store, ref Ref, fn func([]byte) error) error {
+func (o *Operator) getF(ctx context.Context, s cadata.Getter, ref Ref, fn func([]byte) error) error {
 	if value, ok := o.cache.Get(ref.Key()); ok {
 		return fn(value.([]byte))
 	}
