@@ -42,31 +42,31 @@ func (o *Operator) makeSalt(ty Type) *[32]byte {
 var defaultOp = NewOperator()
 
 // PostRaw calls PostRaw on the default Operator
-func PostRaw(ctx context.Context, s cadata.Store, ty Type, r io.Reader) (*Ref, error) {
+func PostRaw(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
 	return defaultOp.PostRaw(ctx, s, ty, r)
 }
 
 // PostBlob creates a new blob with data from r, and returns a Ref to it.
-func PostBlob(ctx context.Context, s cadata.Store, r io.Reader) (*Ref, error) {
+func PostBlob(ctx context.Context, s cadata.Poster, r io.Reader) (*Ref, error) {
 	return defaultOp.PostBlob(ctx, s, r)
 }
 
 // GetBlob returns an io.ReadSeeker for accessing data from the blob at x
-func GetBlob(ctx context.Context, s cadata.Store, x Ref) (*Reader, error) {
+func GetBlob(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
 	return defaultOp.GetBlob(ctx, s, x)
 }
 
 // GetBlobBytes reads the entire contents of the blob at x into memory and returns the slice of bytes.
-func GetBlobBytes(ctx context.Context, s cadata.Store, x Ref) ([]byte, error) {
+func GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref) ([]byte, error) {
 	return defaultOp.GetBlobBytes(ctx, s, x)
 }
 
 // PostTree writes a tree to CA storage and returns a Ref pointing to it.
-func PostTree(ctx context.Context, store cadata.Store, t Tree) (*Ref, error) {
+func PostTree(ctx context.Context, store cadata.Poster, t Tree) (*Ref, error) {
 	return defaultOp.PostTree(ctx, store, t)
 }
 
-func PostTreeFromEntries(ctx context.Context, s cadata.Store, ents []TreeEntry) (*Ref, error) {
+func PostTreeFromEntries(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
 	return defaultOp.PostTreeFromEntries(ctx, s, ents)
 }
 
@@ -76,26 +76,26 @@ func PostTreeFromMap(ctx context.Context, s cadata.Store, m map[string]Ref) (*Re
 
 // GetTree retreives the tree in store at Ref if it exists.
 // If ref.Type != TypeTree ErrRefType is returned.
-func GetTree(ctx context.Context, store cadata.Store, ref Ref) (*Tree, error) {
+func GetTree(ctx context.Context, store cadata.Getter, ref Ref) (*Tree, error) {
 	return defaultOp.GetTree(ctx, store, ref)
 }
 
 // GetAtPath returns a ref to the object under ref at subpath.
 // ErrNoEnt is returned if there is no entry at that path.
-func GetAtPath(ctx context.Context, store cadata.Store, ref Ref, subpath string) (*Ref, error) {
+func GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, subpath string) (*Ref, error) {
 	return defaultOp.GetAtPath(ctx, store, ref, subpath)
 }
 
 // WalkTree walks the tree and calls f with tree entries in lexigraphical order
 // file1.txt comes before file2.txt
 // dir1/ comes before dir1/file1.txt
-func WalkTree(ctx context.Context, store cadata.Store, ref Ref, f WalkTreeFunc) error {
+func WalkTree(ctx context.Context, store cadata.Getter, ref Ref, f WalkTreeFunc) error {
 	return defaultOp.WalkTree(ctx, store, ref, f)
 }
 
 // WalkRefs calls fn with every Ref reacheable from ref, including Ref. The only guarentee about order is bottom up.
 // if a tree is encoutered the child refs will be visited first.
-func WalkRefs(ctx context.Context, s cadata.Store, ref Ref, fn RefWalker) error {
+func WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefWalker) error {
 	return defaultOp.WalkRefs(ctx, s, ref, fn)
 }
 

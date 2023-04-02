@@ -33,14 +33,15 @@ func TestReadTAR(t *testing.T) {
 		t.Run(path.Base(tc), func(t *testing.T) {
 			ctx := context.Background()
 			s := newStore(t)
+			op := glfs.NewOperator()
 			withTARStream(t, tc, func(tr *tar.Reader) {
-				ref, err := ReadTAR(ctx, s, tr)
-				require.Nil(t, err)
+				ref, err := ReadTAR(ctx, &op, s, tr)
+				require.NoError(t, err)
 				require.NotNil(t, ref)
 				err = glfs.WalkRefs(ctx, s, *ref, func(ref glfs.Ref) error {
 					return nil
 				})
-				require.Nil(t, err)
+				require.NoError(t, err)
 			})
 		})
 	}
@@ -53,8 +54,9 @@ func TestWriteRead(t *testing.T) {
 	i := 0
 	ctx := context.Background()
 	s := newStore(t)
+	op := glfs.NewOperator()
 	withTARStream(t, corpus[i], func(tr *tar.Reader) {
-		expected, err := ReadTAR(ctx, s, tr)
+		expected, err := ReadTAR(ctx, &op, s, tr)
 		require.NoError(t, err)
 		require.NotNil(t, expected)
 
@@ -63,7 +65,7 @@ func TestWriteRead(t *testing.T) {
 		eg.Go(func() error {
 			tw := tar.NewWriter(w)
 			defer tw.Close()
-			if err := WriteTAR(ctx, s, *expected, tw); err != nil {
+			if err := WriteTAR(ctx, &op, s, *expected, tw); err != nil {
 				return err
 			}
 			return tw.Close()
@@ -71,10 +73,10 @@ func TestWriteRead(t *testing.T) {
 		var actual *glfs.Ref
 		eg.Go(func() error {
 			tr := tar.NewReader(r)
-			actual, err = ReadTAR(ctx, s, tr)
+			actual, err = ReadTAR(ctx, &op, s, tr)
 			return err
 		})
-		require.Nil(t, eg.Wait())
+		require.NoError(t, eg.Wait())
 		require.Equal(t, expected, actual)
 	})
 }

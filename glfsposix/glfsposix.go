@@ -118,10 +118,16 @@ func glfsExport(ctx context.Context, p glfsExportParams) error {
 		return slices2.ParForEach(ctx, p.sem, tree.Entries, func(ctx context.Context, x glfs.TreeEntry) error {
 			p2 := p
 			p2.target = path.Join(p.target, x.Name)
+			p2.ref = x.Ref
+			// p2.fileMode = x.FileMode
+			p2.fileMode = 0o644
+			if p2.ref.Type == glfs.TypeTree {
+				p2.fileMode = 0o755
+			}
 			return glfsExport(ctx, p2)
 		})
 	case glfs.TypeBlob:
-		f, err := p.fs.OpenFile(p.target, posixfs.O_CREATE|posixfs.O_EXCL, p.fileMode)
+		f, err := p.fs.OpenFile(p.target, posixfs.O_CREATE|posixfs.O_EXCL|posixfs.O_WRONLY, p.fileMode)
 		if err != nil {
 			return err
 		}
