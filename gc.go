@@ -8,8 +8,10 @@ import (
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
-type GCStore interface {
-	cadata.Store
+type GetListDeleter interface {
+	cadata.Getter
+	cadata.Lister
+	cadata.Deleter
 }
 
 type GCStats struct {
@@ -23,7 +25,7 @@ type idSet map[cadata.ID]struct{}
 // GC will remove objects from store which are not referenced by any of the refs in keep.
 // If GC does not successfully complete, referential integrity may be violated, and GC will need
 // to be run to completion before it is safe to call Sync on the store again.
-func (o *Operator) GC(ctx context.Context, store GCStore, prefix []byte, keep []Ref) (*GCStats, error) {
+func (o *Operator) GC(ctx context.Context, store GetListDeleter, prefix []byte, keep []Ref) (*GCStats, error) {
 	// compute reachable
 	reachable, reachableTrees := idSet{}, idSet{}
 	for _, ref := range keep {
@@ -57,7 +59,7 @@ func (o *Operator) GC(ctx context.Context, store GCStore, prefix []byte, keep []
 	}, nil
 }
 
-func (o *Operator) gcCollect(ctx context.Context, store GCStore, prefix []byte, reachable, trees idSet, x Ref) error {
+func (o *Operator) gcCollect(ctx context.Context, store GetListDeleter, prefix []byte, reachable, trees idSet, x Ref) error {
 	switch x.Type {
 	case TypeTree:
 		if _, exists := trees[x.Ref.CID]; exists {

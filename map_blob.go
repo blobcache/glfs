@@ -4,13 +4,11 @@ import (
 	"context"
 	"io"
 	"path"
-
-	"github.com/brendoncarroll/go-state/cadata"
 )
 
 type BlobMapper func(p string, in io.Reader, out io.Writer) error
 
-func (o *Operator) MapBlobs(ctx context.Context, s cadata.Store, root Ref, f BlobMapper) (*Ref, error) {
+func (o *Operator) MapBlobs(ctx context.Context, s GetPoster, root Ref, f BlobMapper) (*Ref, error) {
 	return o.MapLeaves(ctx, s, root, func(p string, x Ref) (*Ref, error) {
 		switch x.Type {
 		case TypeBlob:
@@ -28,11 +26,11 @@ func (o *Operator) MapBlobs(ctx context.Context, s cadata.Store, root Ref, f Blo
 
 type RefMapper func(p string, ref Ref) (*Ref, error)
 
-func (o *Operator) MapLeaves(ctx context.Context, s cadata.Store, root Ref, f RefMapper) (*Ref, error) {
+func (o *Operator) MapLeaves(ctx context.Context, s GetPoster, root Ref, f RefMapper) (*Ref, error) {
 	return o.mapLeaves(ctx, s, root, "", f)
 }
 
-func (o *Operator) mapLeaves(ctx context.Context, s cadata.Store, root Ref, p string, f RefMapper) (*Ref, error) {
+func (o *Operator) mapLeaves(ctx context.Context, s GetPoster, root Ref, p string, f RefMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
 		tree, err := o.GetTree(ctx, s, root)

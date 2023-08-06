@@ -53,7 +53,7 @@ func TestPostTreeFromEntries(t *testing.T) {
 		"dir1/file1.2": blobRef(),
 		"dir2/file2.1": blobRef(),
 	}
-	ref, err := PostTreeFromMap(ctx, s, m1)
+	ref, err := PostTreeMap(ctx, s, m1)
 	require.Nil(t, err)
 
 	for k := range m1 {
@@ -80,7 +80,7 @@ func TestMergeSubtrees(t *testing.T) {
 
 	layers := []Ref{}
 	for _, m := range ms {
-		ref, err := PostTreeFromMap(ctx, s, m)
+		ref, err := PostTreeMap(ctx, s, m)
 		require.Nil(t, err)
 		layers = append(layers, *ref)
 	}

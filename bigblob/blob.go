@@ -257,8 +257,8 @@ func branchingFactor(blockSize uint64) uint64 {
 	return blockSize / maxRefSize
 }
 
-func (o *Operator) Sync(ctx context.Context, dst, src cadata.Store, x Root, fn func(r *Reader) error) error {
-	if exists, err := cadata.Exists(ctx, dst, x.Ref.CID); err != nil {
+func (o *Operator) Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, x Root, fn func(r *Reader) error) error {
+	if exists, err := dst.Exists(ctx, x.Ref.CID); err != nil {
 		return err
 	} else if exists {
 		return nil
@@ -270,7 +270,7 @@ func (o *Operator) Sync(ctx context.Context, dst, src cadata.Store, x Root, fn f
 	return o.sync(ctx, dst, src, x.BlockSize, x.Ref, depth(x.Size, x.BlockSize))
 }
 
-func (o *Operator) sync(ctx context.Context, dst, src cadata.Store, blockSize uint64, ref Ref, level int) error {
+func (o *Operator) sync(ctx context.Context, dst cadata.GetPoster, src cadata.Getter, blockSize uint64, ref Ref, level int) error {
 	if level > 0 {
 		if err := o.getF(ctx, src, ref, func(data []byte) error {
 			idx, err := newIndexUsing(data, int(blockSize))

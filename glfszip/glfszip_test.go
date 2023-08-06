@@ -31,7 +31,7 @@ func TestImport(t *testing.T) {
 			s := newStore(t)
 
 			zr := newZipReader(t, tc)
-			ref, err := Import(ctx, &op, s, zr)
+			ref, err := Import(ctx, op, s, zr)
 			require.NoError(t, err)
 			t.Log(ref)
 			err = glfs.WalkTree(ctx, s, *ref, func(prefix string, ent glfs.TreeEntry) error {

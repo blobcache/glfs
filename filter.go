@@ -7,13 +7,12 @@ import (
 	"math"
 	"path"
 
-	"github.com/brendoncarroll/go-state/cadata"
 	"golang.org/x/sync/errgroup"
 )
 
 // FilterPaths returns a version of root with paths filtered using f as a predicate.
 // If f returns true for a path it will be included in the output, otherwise it will not.
-func (o *Operator) FilterPaths(ctx context.Context, s cadata.Store, root Ref, f func(string) bool) (*Ref, error) {
+func (o *Operator) FilterPaths(ctx context.Context, s GetPoster, root Ref, f func(string) bool) (*Ref, error) {
 	ref, err := o.filterPaths(ctx, s, root, "", f)
 	if err != nil {
 		return nil, err
@@ -24,7 +23,7 @@ func (o *Operator) FilterPaths(ctx context.Context, s cadata.Store, root Ref, f 
 	return o.PostTree(ctx, s, Tree{})
 }
 
-func (o *Operator) filterPaths(ctx context.Context, s cadata.Store, root Ref, p string, f func(string) bool) (*Ref, error) {
+func (o *Operator) filterPaths(ctx context.Context, s GetPoster, root Ref, p string, f func(string) bool) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
 		tree, err := o.GetTree(ctx, s, root)
@@ -64,7 +63,7 @@ func (o *Operator) filterPaths(ctx context.Context, s cadata.Store, root Ref, p 
 	}
 }
 
-func (o *Operator) ShardLeaves(ctx context.Context, s cadata.Store, root Ref, n int) ([]Ref, error) {
+func (o *Operator) ShardLeaves(ctx context.Context, s GetPoster, root Ref, n int) ([]Ref, error) {
 	hashFunc := func(p string) uint32 {
 		h := fnv.New32()
 		h.Write([]byte(p))

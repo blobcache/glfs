@@ -6,13 +6,11 @@ import (
 	"strings"
 
 	"errors"
-
-	"github.com/brendoncarroll/go-state/cadata"
 )
 
 type TreeEntryMapper func(ent TreeEntry) (*TreeEntry, error)
 
-func (o *Operator) MapEntries(ctx context.Context, s cadata.Store, root Ref, f TreeEntryMapper) (*Ref, error) {
+func (o *Operator) MapEntries(ctx context.Context, s GetPoster, root Ref, f TreeEntryMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeBlob:
 		return &root, nil
@@ -35,7 +33,7 @@ func (o *Operator) MapEntries(ctx context.Context, s cadata.Store, root Ref, f T
 	}
 }
 
-func (o *Operator) MapEntryAt(ctx context.Context, s cadata.Store, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
+func (o *Operator) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
 	if p == "" {
 		return nil, errors.New("MapEntryAt cannot operate on empty path")
 	}

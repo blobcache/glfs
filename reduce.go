@@ -18,7 +18,7 @@ import (
 // Merge(tree1, tree2) -> set of entry names given by tree1 + tree2. value at entry x given by Merge(tree1[x], tree2[x])
 // Although not written as such for performance reasons:
 // Merging(1, 2, 3, 4, 5) == Merge(Merge(Merge(Merge(1, 2), 3), 4), 5)
-func (o *Operator) Merge(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
+func (o *Operator) Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Ref, error) {
 	switch {
 	case len(layers) == 0:
 		panic("merging 0 layers")

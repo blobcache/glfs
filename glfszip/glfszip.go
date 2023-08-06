@@ -37,5 +37,5 @@ func Import(ctx context.Context, op *glfs.Operator, s cadata.Poster, zr *zip.Rea
 			return nil, err
 		}
 	}
-	return op.PostTreeFromEntries(ctx, s, ents)
+	return op.PostTreeEntries(ctx, s, ents)
 }

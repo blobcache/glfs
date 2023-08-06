@@ -137,7 +137,7 @@ func ReadTAR(ctx context.Context, op *glfs.Operator, s cadata.Poster, tr *tar.Re
 	for _, ent := range emptyDirs {
 		ents = append(ents, ent)
 	}
-	return op.PostTreeFromEntries(ctx, s, ents)
+	return op.PostTreeEntries(ctx, s, ents)
 }
 
 func clean(x string) string {

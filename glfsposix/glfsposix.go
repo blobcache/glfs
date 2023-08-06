@@ -67,7 +67,7 @@ func glfsImport(ctx context.Context, p glfsImportParams) (*glfs.Ref, error) {
 		if err != nil {
 			return nil, err
 		}
-		return p.op.PostTreeFromEntries(ctx, p.s, tents)
+		return p.op.PostTreeEntries(ctx, p.s, tents)
 	}
 	// regular file
 	f, err := p.fs.OpenFile(p.target, posixfs.O_RDONLY, 0)

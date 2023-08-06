@@ -34,12 +34,13 @@ type Operator struct {
 	bufPool sync.Pool
 }
 
-func NewOperator(opts ...Option) Operator {
+func NewOperator(opts ...Option) *Operator {
 	o := Operator{
 		cacheSize: 64,
 		bufPool: sync.Pool{
 			New: func() interface{} {
-				return []byte(nil)
+				buf := []byte(nil)
+				return &buf
 			},
 		},
 	}
@@ -47,18 +48,18 @@ func NewOperator(opts ...Option) Operator {
 		opt(&o)
 	}
 	o.cache = newCache(o.cacheSize)
-	return o
+	return &o
 }
 
-func (o *Operator) acquireBuffer(n int) []byte {
-	x := o.bufPool.Get().([]byte)
-	if len(x) < n {
-		x = append(x, make([]byte, n-len(x))...)
+func (o *Operator) acquireBuffer(n int) *[]byte {
+	x := o.bufPool.Get().(*[]byte)
+	if len(*x) < n {
+		*x = append(*x, make([]byte, n-len(*x))...)
 	}
 	return x
 }
 
-func (o *Operator) releaseBuffer(x []byte) {
+func (o *Operator) releaseBuffer(x *[]byte) {
 	o.bufPool.Put(x)
 }
 

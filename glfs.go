@@ -45,33 +45,55 @@ func (a Ref) Equals(b Ref) bool {
 	return a.Type == b.Type && a.Root.Equals(b.Root)
 }
 
-// PostRaw posts data with an arbitrary type.
+// PostTyped posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
-func (o *Operator) PostRaw(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
-	bw := o.bfop.NewWriter(ctx, s, o.makeSalt(ty))
-	if _, err := io.Copy(bw, r); err != nil {
+func (o *Operator) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
+	tw := o.NewTypedWriter(ctx, s, ty)
+	if _, err := io.Copy(tw, r); err != nil {
 		return nil, err
 	}
-	root, err := bw.Finish(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &Ref{
-		Type: ty,
-		Root: *root,
-	}, nil
+	return tw.Finish(ctx)
 }
 
-// GetRaw retrieves the object in s at x.
+// GetTyped retrieves the object in s at x.
 // If x.Type != ty, ErrRefType is returned.
-func (o *Operator) GetRaw(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
+func (o *Operator) GetTyped(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
 	if ty != "" && x.Type != ty {
 		return nil, ErrRefType{Have: x.Type, Want: TypeBlob}
 	}
 	return o.bfop.NewReader(ctx, s, x.Root), nil
 }
 
+type TypedWriter struct {
+	ty Type
+	bw *bigblob.Writer
+}
+
+func (tw *TypedWriter) Write(data []byte) (int, error) {
+	return tw.bw.Write(data)
+}
+
+func (tw *TypedWriter) Finish(ctx context.Context) (*Ref, error) {
+	root, err := tw.bw.Finish(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &Ref{Root: *root, Type: tw.ty}, nil
+}
+
+// NewTypedWriter returns a new writer for ty.
+func (o *Operator) NewTypedWriter(ctx context.Context, s cadata.Poster, ty Type) *TypedWriter {
+	return &TypedWriter{ty: ty, bw: o.bfop.NewWriter(ctx, s, o.makeSalt(ty))}
+}
+
 // SizeOf returns the size of the data at x
 func SizeOf(x Ref) uint64 {
 	return x.Size
+}
+
+type GetPoster = cadata.GetPoster
+
+type PostLister interface {
+	cadata.Poster
+	cadata.Lister
 }

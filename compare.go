@@ -2,8 +2,6 @@ package glfs
 
 import (
 	"context"
-
-	"github.com/brendoncarroll/go-state/cadata"
 )
 
 // Diff contains the result of a Compare
@@ -18,7 +16,7 @@ type Diff struct {
 
 // Compare compares left and right and returns a diff.
 // Left and right must both point only to data in s.
-func (o *Operator) Compare(ctx context.Context, s cadata.Store, left, right Ref) (*Diff, error) {
+func (o *Operator) Compare(ctx context.Context, s GetPoster, left, right Ref) (*Diff, error) {
 	if left.Type != right.Type {
 		return &Diff{
 			Left:  &left,
@@ -48,7 +46,7 @@ func (o *Operator) Compare(ctx context.Context, s cadata.Store, left, right Ref)
 	}
 }
 
-func (o *Operator) compareTrees(ctx context.Context, s cadata.Store, lTree, rTree Tree) (*Diff, error) {
+func (o *Operator) compareTrees(ctx context.Context, s GetPoster, lTree, rTree Tree) (*Diff, error) {
 	onlyLeft := onlyInFirst(lTree, rTree)
 	onlyRight := onlyInFirst(rTree, lTree)
 	var both []TreeEntry
@@ -85,17 +83,17 @@ func (o *Operator) compareTrees(ctx context.Context, s cadata.Store, lTree, rTre
 	var err error
 	var diff Diff
 	if len(onlyLeft) > 0 {
-		if diff.Left, err = o.PostTreeFromEntries(ctx, s, onlyLeft); err != nil {
+		if diff.Left, err = o.PostTreeEntries(ctx, s, onlyLeft); err != nil {
 			return nil, err
 		}
 	}
 	if len(onlyRight) > 0 {
-		if diff.Right, err = o.PostTreeFromEntries(ctx, s, onlyRight); err != nil {
+		if diff.Right, err = o.PostTreeEntries(ctx, s, onlyRight); err != nil {
 			return nil, err
 		}
 	}
 	if len(both) > 0 {
-		if diff.Both, err = o.PostTreeFromEntries(ctx, s, both); err != nil {
+		if diff.Both, err = o.PostTreeEntries(ctx, s, both); err != nil {
 			return nil, err
 		}
 	}

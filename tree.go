@@ -243,7 +243,7 @@ func (o *Operator) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn Re
 	return fn(ref)
 }
 
-func (o *Operator) PostTreeFromEntries(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
+func (o *Operator) PostTreeEntries(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
 	tree := Tree{}
 	subents := map[string][]TreeEntry{}
 	for _, ent := range ents {
@@ -268,7 +268,7 @@ func (o *Operator) PostTreeFromEntries(ctx context.Context, s cadata.Poster, ent
 	}
 
 	for k, ents2 := range subents {
-		ref, err := o.PostTreeFromEntries(ctx, s, ents2)
+		ref, err := o.PostTreeEntries(ctx, s, ents2)
 		if err != nil {
 			return nil, err
 		}
@@ -281,7 +281,7 @@ func (o *Operator) PostTreeFromEntries(ctx context.Context, s cadata.Poster, ent
 	return o.PostTree(ctx, s, tree)
 }
 
-func (o *Operator) PostTreeFromMap(ctx context.Context, s cadata.Poster, m map[string]Ref) (*Ref, error) {
+func (o *Operator) PostTreeMap(ctx context.Context, s cadata.Poster, m map[string]Ref) (*Ref, error) {
 	entries := []TreeEntry{}
 	for k, v := range m {
 		entries = append(entries, TreeEntry{
@@ -290,7 +290,7 @@ func (o *Operator) PostTreeFromMap(ctx context.Context, s cadata.Poster, m map[s
 			Ref:      v,
 		})
 	}
-	return o.PostTreeFromEntries(ctx, s, entries)
+	return o.PostTreeEntries(ctx, s, entries)
 }
 
 func getFileMode(tr Ref) os.FileMode {

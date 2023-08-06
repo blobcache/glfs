@@ -21,11 +21,11 @@ type Operator struct {
 	salt      *[32]byte
 	blockSize int
 
-	bfop bigblob.Operator
+	bfop *bigblob.Operator
 }
 
-func NewOperator(opts ...Option) Operator {
-	o := Operator{
+func NewOperator(opts ...Option) *Operator {
+	o := &Operator{
 		salt:      new([32]byte),
 		blockSize: DefaultBlockSize,
 	}
@@ -42,8 +42,8 @@ func (o *Operator) makeSalt(ty Type) *[32]byte {
 var defaultOp = NewOperator()
 
 // PostRaw calls PostRaw on the default Operator
-func PostRaw(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
-	return defaultOp.PostRaw(ctx, s, ty, r)
+func PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
+	return defaultOp.PostTyped(ctx, s, ty, r)
 }
 
 // PostBlob creates a new blob with data from r, and returns a Ref to it.
@@ -66,12 +66,12 @@ func PostTree(ctx context.Context, store cadata.Poster, t Tree) (*Ref, error) {
 	return defaultOp.PostTree(ctx, store, t)
 }
 
-func PostTreeFromEntries(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
-	return defaultOp.PostTreeFromEntries(ctx, s, ents)
+func PostTreeEntries(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
+	return defaultOp.PostTreeEntries(ctx, s, ents)
 }
 
-func PostTreeFromMap(ctx context.Context, s cadata.Store, m map[string]Ref) (*Ref, error) {
-	return defaultOp.PostTreeFromMap(ctx, s, m)
+func PostTreeMap(ctx context.Context, s cadata.Poster, m map[string]Ref) (*Ref, error) {
+	return defaultOp.PostTreeMap(ctx, s, m)
 }
 
 // GetTree retreives the tree in store at Ref if it exists.
@@ -101,44 +101,44 @@ func WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefWalker) error
 
 // Sync ensures that all data referenced by x exists in dst, copying from src if necessary.
 // Sync assumes there are no dangling references, and skips copying data when its existence is implied.
-func Sync(ctx context.Context, dst, src cadata.Store, x Ref) error {
+func Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, x Ref) error {
 	return defaultOp.Sync(ctx, dst, src, x)
 }
 
 // FilterPaths returns a version of root with paths filtered using f as a predicate.
 // If f returns true for a path it will be included in the output, otherwise it will not.
-func FilterPaths(ctx context.Context, s cadata.Store, root Ref, f func(string) bool) (*Ref, error) {
+func FilterPaths(ctx context.Context, s GetPoster, root Ref, f func(string) bool) (*Ref, error) {
 	return defaultOp.FilterPaths(ctx, s, root, f)
 }
 
 // ShardLeaves calls ShardLeaves on the default Operator
-func ShardLeaves(ctx context.Context, s cadata.Store, root Ref, n int) ([]Ref, error) {
+func ShardLeaves(ctx context.Context, s GetPoster, root Ref, n int) ([]Ref, error) {
 	return defaultOp.ShardLeaves(ctx, s, root, n)
 }
 
 // MapBlobs calls MapBlobs on the default Operator
-func MapBlobs(ctx context.Context, s cadata.Store, root Ref, f BlobMapper) (*Ref, error) {
+func MapBlobs(ctx context.Context, s GetPoster, root Ref, f BlobMapper) (*Ref, error) {
 	return defaultOp.MapBlobs(ctx, s, root, f)
 }
 
 // MapLeaves calls MapLeaves on the default Operator
-func MapLeaves(ctx context.Context, s cadata.Store, root Ref, f RefMapper) (*Ref, error) {
+func MapLeaves(ctx context.Context, s GetPoster, root Ref, f RefMapper) (*Ref, error) {
 	return defaultOp.MapLeaves(ctx, s, root, f)
 }
 
 // MapEntryAt calls MapEntryAt on the default Operator
-func MapEntryAt(ctx context.Context, s cadata.Store, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
+func MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
 	return defaultOp.MapEntryAt(ctx, s, root, p, f)
 }
 
 // Merge calls Merge on the default Operator
-func Merge(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
+func Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Ref, error) {
 	return defaultOp.Merge(ctx, store, layers...)
 }
 
 // GC will remove objects from store which are not referenced by any of the refs in keep.
 // If GC does not successfully complete, referential integrity may be violated, and GC will need
 // to be run to completion before it is safe to call Sync on the store again.
-func GC(ctx context.Context, store GCStore, prefix []byte, keep ...Ref) (*GCStats, error) {
+func GC(ctx context.Context, store GetListDeleter, prefix []byte, keep ...Ref) (*GCStats, error) {
 	return defaultOp.GC(ctx, store, prefix, keep)
 }

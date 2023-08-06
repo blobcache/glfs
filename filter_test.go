@@ -21,7 +21,7 @@ func TestShardLeaves(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		x, err := PostTreeFromMap(ctx, s, tc)
+		x, err := PostTreeMap(ctx, s, tc)
 		require.Nil(t, err)
 		logTree(ctx, t, s, *x)
 		shards, err := ShardLeaves(ctx, s, *x, 4)
