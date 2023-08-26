@@ -10,7 +10,7 @@ import (
 )
 
 // Import creates a glfs.Tree from the contents of a zip.Reader: zr.
-func Import(ctx context.Context, op *glfs.Operator, s cadata.Poster, zr *zip.Reader) (*glfs.Ref, error) {
+func Import(ctx context.Context, ag *glfs.Agent, s cadata.Poster, zr *zip.Reader) (*glfs.Ref, error) {
 	var ents []glfs.TreeEntry
 	for _, f := range zr.File {
 		rc, err := f.Open()
@@ -19,7 +19,7 @@ func Import(ctx context.Context, op *glfs.Operator, s cadata.Poster, zr *zip.Rea
 		}
 		if err := func() error {
 			defer rc.Close()
-			w := op.NewBlobWriter(ctx, s)
+			w := ag.NewBlobWriter(ctx, s)
 			if _, err := io.Copy(w, rc); err != nil {
 				return err
 			}
@@ -37,5 +37,5 @@ func Import(ctx context.Context, op *glfs.Operator, s cadata.Poster, zr *zip.Rea
 			return nil, err
 		}
 	}
-	return op.PostTreeEntries(ctx, s, ents)
+	return ag.PostTreeEntries(ctx, s, ents)
 }

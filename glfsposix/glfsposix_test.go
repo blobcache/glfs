@@ -14,23 +14,23 @@ import (
 
 func TestImport(t *testing.T) {
 	ctx := context.Background()
-	op := glfs.NewOperator()
+	ag := glfs.NewAgent()
 	s := cadata.NewMem(cadata.DefaultHash, glfs.DefaultBlockSize)
 	fs := posixfs.NewTestFS(t)
 	require.NoError(t, posixfs.PutFile(ctx, fs, "test.txt", 0o644, strings.NewReader("hello world")))
 
-	ref, err := Import(ctx, op, semaphore.NewWeighted(1), s, fs, "")
+	ref, err := Import(ctx, ag, semaphore.NewWeighted(1), s, fs, "")
 	require.NoError(t, err)
 	require.Equal(t, glfs.TypeTree, ref.Type)
 
-	tree, err := op.GetTree(ctx, s, *ref)
+	tree, err := ag.GetTree(ctx, s, *ref)
 	require.NoError(t, err)
 	require.Len(t, tree.Entries, 1)
 }
 
 func TestExport(t *testing.T) {
 	ctx := context.Background()
-	op := glfs.NewOperator()
+	op := glfs.NewAgent()
 	s := cadata.NewMem(cadata.DefaultHash, glfs.DefaultBlockSize)
 	fs := posixfs.NewTestFS(t)
 	sem := semaphore.NewWeighted(10)

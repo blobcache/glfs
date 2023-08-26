@@ -15,9 +15,9 @@ import (
 )
 
 // Import goes from a POSIX filesystem to GLFS
-func Import(ctx context.Context, op *glfs.Operator, sem *semaphore.Weighted, s cadata.Poster, fsx posixfs.FS, p string) (*glfs.Ref, error) {
+func Import(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cadata.Poster, fsx posixfs.FS, p string) (*glfs.Ref, error) {
 	return glfsImport(ctx, glfsImportParams{
-		op:  op,
+		ag:  ag,
 		sem: sem,
 		s:   s,
 
@@ -27,7 +27,7 @@ func Import(ctx context.Context, op *glfs.Operator, sem *semaphore.Weighted, s c
 }
 
 type glfsImportParams struct {
-	op  *glfs.Operator
+	ag  *glfs.Agent
 	sem *semaphore.Weighted
 	s   cadata.Poster
 
@@ -49,7 +49,7 @@ func glfsImport(ctx context.Context, p glfsImportParams) (*glfs.Ref, error) {
 		tents, err := slices2.ParMapErr(ctx, p.sem, ents, func(ctx context.Context, ent posixfs.DirEnt) (glfs.TreeEntry, error) {
 			p2 := path.Join(p.target, ent.Name)
 			ref2, err := glfsImport(ctx, glfsImportParams{
-				op:     p.op,
+				ag:     p.ag,
 				s:      p.s,
 				sem:    p.sem,
 				fs:     p.fs,
@@ -67,7 +67,7 @@ func glfsImport(ctx context.Context, p glfsImportParams) (*glfs.Ref, error) {
 		if err != nil {
 			return nil, err
 		}
-		return p.op.PostTreeEntries(ctx, p.s, tents)
+		return p.ag.PostTreeEntries(ctx, p.s, tents)
 	}
 	// regular file
 	f, err := p.fs.OpenFile(p.target, posixfs.O_RDONLY, 0)
@@ -75,17 +75,17 @@ func glfsImport(ctx context.Context, p glfsImportParams) (*glfs.Ref, error) {
 		return nil, err
 	}
 	defer f.Close()
-	return p.op.PostBlob(ctx, p.s, f)
+	return p.ag.PostBlob(ctx, p.s, f)
 }
 
 // Export exports a glfs object beneath p in the filesystem fsx.
-func Export(ctx context.Context, op *glfs.Operator, sem *semaphore.Weighted, s cadata.Getter, root glfs.Ref, fsx posixfs.FS, p string) error {
+func Export(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cadata.Getter, root glfs.Ref, fsx posixfs.FS, p string) error {
 	fileMode := posixfs.FileMode(0o644)
 	if root.Type == glfs.TypeTree {
 		fileMode = 0o755
 	}
 	return glfsExport(ctx, glfsExportParams{
-		op:       op,
+		ag:       ag,
 		sem:      sem,
 		s:        s,
 		fs:       fsx,
@@ -96,7 +96,7 @@ func Export(ctx context.Context, op *glfs.Operator, sem *semaphore.Weighted, s c
 }
 
 type glfsExportParams struct {
-	op       *glfs.Operator
+	ag       *glfs.Agent
 	s        cadata.Getter
 	sem      *semaphore.Weighted
 	fs       posixfs.FS
@@ -111,7 +111,7 @@ func glfsExport(ctx context.Context, p glfsExportParams) error {
 		if err := p.fs.Mkdir(p.target, p.fileMode); err != nil {
 			return err
 		}
-		tree, err := p.op.GetTree(ctx, p.s, p.ref)
+		tree, err := p.ag.GetTree(ctx, p.s, p.ref)
 		if err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ func glfsExport(ctx context.Context, p glfsExportParams) error {
 			return err
 		}
 		defer f.Close()
-		r, err := p.op.GetBlob(ctx, p.s, p.ref)
+		r, err := p.ag.GetBlob(ctx, p.s, p.ref)
 		if err != nil {
 			return err
 		}

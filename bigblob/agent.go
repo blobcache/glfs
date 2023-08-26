@@ -6,11 +6,11 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-type Option func(*Operator)
+type Option func(*Agent)
 
 func WithCacheSize(n int) Option {
-	return func(o *Operator) {
-		o.cacheSize = n
+	return func(ag *Agent) {
+		ag.cacheSize = n
 	}
 }
 
@@ -21,12 +21,12 @@ func WithBlockSize(n int) Option {
 	if n < 0 {
 		panic(n)
 	}
-	return func(o *Operator) {
-		o.blockSize = n
+	return func(ag *Agent) {
+		ag.blockSize = n
 	}
 }
 
-type Operator struct {
+type Agent struct {
 	cacheSize int
 	blockSize int
 
@@ -34,8 +34,8 @@ type Operator struct {
 	bufPool sync.Pool
 }
 
-func NewOperator(opts ...Option) *Operator {
-	o := Operator{
+func NewAgent(opts ...Option) *Agent {
+	o := Agent{
 		cacheSize: 64,
 		bufPool: sync.Pool{
 			New: func() interface{} {
@@ -51,16 +51,16 @@ func NewOperator(opts ...Option) *Operator {
 	return &o
 }
 
-func (o *Operator) acquireBuffer(n int) *[]byte {
-	x := o.bufPool.Get().(*[]byte)
+func (ag *Agent) acquireBuffer(n int) *[]byte {
+	x := ag.bufPool.Get().(*[]byte)
 	if len(*x) < n {
 		*x = append(*x, make([]byte, n-len(*x))...)
 	}
 	return x
 }
 
-func (o *Operator) releaseBuffer(x *[]byte) {
-	o.bufPool.Put(x)
+func (ag *Agent) releaseBuffer(x *[]byte) {
+	ag.bufPool.Put(x)
 }
 
 func newCache(size int) *lru.Cache {

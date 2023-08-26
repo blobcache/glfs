@@ -16,9 +16,9 @@ import (
 )
 
 // WriteTAR writes the GLFS filesystem at root to tw.
-func WriteTAR(ctx context.Context, op *glfs.Operator, s cadata.Getter, root glfs.Ref, tw *tar.Writer) error {
+func WriteTAR(ctx context.Context, ag *glfs.Agent, s cadata.Getter, root glfs.Ref, tw *tar.Writer) error {
 	if root.Type == glfs.TypeBlob {
-		r, err := op.GetBlob(ctx, s, root)
+		r, err := ag.GetBlob(ctx, s, root)
 		if err != nil {
 			return err
 		}
@@ -34,12 +34,12 @@ func WriteTAR(ctx context.Context, op *glfs.Operator, s cadata.Getter, root glfs
 		}
 		return tw.Close()
 	}
-	err := op.WalkTree(ctx, s, root, func(prefix string, ent glfs.TreeEntry) error {
+	err := ag.WalkTree(ctx, s, root, func(prefix string, ent glfs.TreeEntry) error {
 		p := path.Join(prefix, ent.Name)
 		mode := ent.FileMode
 		switch ent.Ref.Type {
 		case glfs.TypeBlob:
-			data, err := op.GetBlobBytes(ctx, s, ent.Ref)
+			data, err := ag.GetBlobBytes(ctx, s, ent.Ref)
 			if err != nil {
 				return err
 			}
@@ -83,7 +83,7 @@ func WriteTAR(ctx context.Context, op *glfs.Operator, s cadata.Getter, root glfs
 }
 
 // ReadTAR creates a GLFS filesystem with contents read from tr
-func ReadTAR(ctx context.Context, op *glfs.Operator, s cadata.Poster, tr *tar.Reader) (*glfs.Ref, error) {
+func ReadTAR(ctx context.Context, ag *glfs.Agent, s cadata.Poster, tr *tar.Reader) (*glfs.Ref, error) {
 	ents := []glfs.TreeEntry{}
 	emptyDirs := map[string]glfs.TreeEntry{}
 	for {
@@ -103,7 +103,7 @@ func ReadTAR(ctx context.Context, op *glfs.Operator, s cadata.Poster, tr *tar.Re
 		switch th.Typeflag {
 		case tar.TypeDir:
 			mode |= int64(os.ModeDir)
-			ref, err := op.PostTree(ctx, s, glfs.Tree{})
+			ref, err := ag.PostTree(ctx, s, glfs.Tree{})
 			if err != nil {
 				return nil, err
 			}
@@ -116,12 +116,12 @@ func ReadTAR(ctx context.Context, op *glfs.Operator, s cadata.Poster, tr *tar.Re
 			continue
 		case tar.TypeSymlink, tar.TypeLink:
 			mode |= int64(os.ModeSymlink)
-			ref, err = op.PostBlob(ctx, s, strings.NewReader(th.Linkname))
+			ref, err = ag.PostBlob(ctx, s, strings.NewReader(th.Linkname))
 			if err != nil {
 				return nil, err
 			}
 		default:
-			ref, err = op.PostBlob(ctx, s, tr)
+			ref, err = ag.PostBlob(ctx, s, tr)
 			if err != nil {
 				return nil, err
 			}
@@ -137,7 +137,7 @@ func ReadTAR(ctx context.Context, op *glfs.Operator, s cadata.Poster, tr *tar.Re
 	for _, ent := range emptyDirs {
 		ents = append(ents, ent)
 	}
-	return op.PostTreeEntries(ctx, s, ents)
+	return ag.PostTreeEntries(ctx, s, ents)
 }
 
 func clean(x string) string {

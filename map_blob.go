@@ -8,12 +8,12 @@ import (
 
 type BlobMapper func(p string, in io.Reader, out io.Writer) error
 
-func (o *Operator) MapBlobs(ctx context.Context, s GetPoster, root Ref, f BlobMapper) (*Ref, error) {
-	return o.MapLeaves(ctx, s, root, func(p string, x Ref) (*Ref, error) {
+func (ag *Agent) MapBlobs(ctx context.Context, s GetPoster, root Ref, f BlobMapper) (*Ref, error) {
+	return ag.MapLeaves(ctx, s, root, func(p string, x Ref) (*Ref, error) {
 		switch x.Type {
 		case TypeBlob:
-			r := o.bfop.NewReader(ctx, s, x.Root)
-			w := o.NewBlobWriter(ctx, s)
+			r := ag.bbag.NewReader(ctx, s, x.Root)
+			w := ag.NewBlobWriter(ctx, s)
 			if err := f(p, r, w); err != nil {
 				return nil, err
 			}
@@ -26,21 +26,21 @@ func (o *Operator) MapBlobs(ctx context.Context, s GetPoster, root Ref, f BlobMa
 
 type RefMapper func(p string, ref Ref) (*Ref, error)
 
-func (o *Operator) MapLeaves(ctx context.Context, s GetPoster, root Ref, f RefMapper) (*Ref, error) {
-	return o.mapLeaves(ctx, s, root, "", f)
+func (ag *Agent) MapLeaves(ctx context.Context, s GetPoster, root Ref, f RefMapper) (*Ref, error) {
+	return ag.mapLeaves(ctx, s, root, "", f)
 }
 
-func (o *Operator) mapLeaves(ctx context.Context, s GetPoster, root Ref, p string, f RefMapper) (*Ref, error) {
+func (ag *Agent) mapLeaves(ctx context.Context, s GetPoster, root Ref, p string, f RefMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
-		tree, err := o.GetTree(ctx, s, root)
+		tree, err := ag.GetTree(ctx, s, root)
 		if err != nil {
 			return nil, err
 		}
 		tree2 := Tree{}
 		for _, ent := range tree.Entries {
 			p2 := path.Join(p, ent.Name)
-			ref, err := o.mapLeaves(ctx, s, ent.Ref, p2, f)
+			ref, err := ag.mapLeaves(ctx, s, ent.Ref, p2, f)
 			if err != nil {
 				return nil, err
 			}
@@ -52,7 +52,7 @@ func (o *Operator) mapLeaves(ctx context.Context, s GetPoster, root Ref, p strin
 				})
 			}
 		}
-		return o.PostTree(ctx, s, tree2)
+		return ag.PostTree(ctx, s, tree2)
 	default:
 		return f(p, root)
 	}

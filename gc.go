@@ -25,11 +25,11 @@ type idSet map[cadata.ID]struct{}
 // GC will remove objects from store which are not referenced by any of the refs in keep.
 // If GC does not successfully complete, referential integrity may be violated, and GC will need
 // to be run to completion before it is safe to call Sync on the store again.
-func (o *Operator) GC(ctx context.Context, store GetListDeleter, prefix []byte, keep []Ref) (*GCStats, error) {
+func (ag *Agent) GC(ctx context.Context, store GetListDeleter, prefix []byte, keep []Ref) (*GCStats, error) {
 	// compute reachable
 	reachable, reachableTrees := idSet{}, idSet{}
 	for _, ref := range keep {
-		if err := o.gcCollect(ctx, store, prefix, reachable, reachableTrees, ref); err != nil {
+		if err := ag.gcCollect(ctx, store, prefix, reachable, reachableTrees, ref); err != nil {
 			return nil, err
 		}
 	}
@@ -59,18 +59,18 @@ func (o *Operator) GC(ctx context.Context, store GetListDeleter, prefix []byte, 
 	}, nil
 }
 
-func (o *Operator) gcCollect(ctx context.Context, store GetListDeleter, prefix []byte, reachable, trees idSet, x Ref) error {
+func (ag *Agent) gcCollect(ctx context.Context, store GetListDeleter, prefix []byte, reachable, trees idSet, x Ref) error {
 	switch x.Type {
 	case TypeTree:
 		if _, exists := trees[x.Ref.CID]; exists {
 			return nil
 		}
-		tree, err := o.GetTree(ctx, store, x)
+		tree, err := ag.GetTree(ctx, store, x)
 		if err != nil {
 			return err
 		}
 		for _, ent := range tree.Entries {
-			if err := o.gcCollect(ctx, store, prefix, reachable, trees, ent.Ref); err != nil {
+			if err := ag.gcCollect(ctx, store, prefix, reachable, trees, ent.Ref); err != nil {
 				return err
 			}
 		}

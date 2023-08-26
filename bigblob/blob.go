@@ -24,16 +24,16 @@ func (r1 Root) Equals(r2 Root) bool {
 	return r1.Size == r2.Size && r1.BlockSize == r2.BlockSize && r1.Ref.Equals(r2.Ref)
 }
 
-func (o *Operator) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset int64, buf []byte) (n int, err error) {
+func (ag *Agent) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset int64, buf []byte) (n int, err error) {
 	level := depth(x.Size, x.BlockSize)
 	bf := branchingFactor(x.BlockSize)
 	blockIndex := uint64(offset) / x.BlockSize
 	relOffset := uint64(offset) % x.BlockSize
-	ref, err := o.getPiece(ctx, s, x.Ref, int(bf), level, int(blockIndex))
+	ref, err := ag.getPiece(ctx, s, x.Ref, int(bf), level, int(blockIndex))
 	if err != nil {
 		return n, err
 	}
-	if err := o.getF(ctx, s, *ref, func(data []byte) error {
+	if err := ag.getF(ctx, s, *ref, func(data []byte) error {
 		n = copy(buf[n:], data[relOffset:])
 		offset += int64(n)
 		return nil
@@ -46,12 +46,12 @@ func (o *Operator) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset i
 	return n, nil
 }
 
-func (o *Operator) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, level, blockIndex int) (*Ref, error) {
+func (ag *Agent) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, level, blockIndex int) (*Ref, error) {
 	if level == 0 {
 		return &root, nil
 	}
 	var ref Ref
-	if err := o.getF(ctx, s, root, func(data []byte) error {
+	if err := ag.getF(ctx, s, root, func(data []byte) error {
 		idx, err := newIndexUsing(data, bf*maxRefSize)
 		if err != nil {
 			return err
@@ -61,12 +61,12 @@ func (o *Operator) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, 
 	}); err != nil {
 		return nil, err
 	}
-	return o.getPiece(ctx, s, ref, bf, level-1, blockIndex%powInt(bf, level-1))
+	return ag.getPiece(ctx, s, ref, bf, level-1, blockIndex%powInt(bf, level-1))
 }
 
 type Writer struct {
 	ctx                context.Context
-	o                  *Operator
+	ag                 *Agent
 	s                  cadata.Poster
 	blockSize          int
 	indexSalt, rawSalt *[32]byte
@@ -78,10 +78,10 @@ type Writer struct {
 	buf     []byte
 }
 
-func (o *Operator) NewWriter(ctx context.Context, s cadata.Poster, salt *[32]byte) *Writer {
+func (ag *Agent) NewWriter(ctx context.Context, s cadata.Poster, salt *[32]byte) *Writer {
 	blockSize := s.MaxSize()
-	if o.blockSize > 0 {
-		blockSize = o.blockSize
+	if ag.blockSize > 0 {
+		blockSize = ag.blockSize
 	}
 	if blockSize > s.MaxSize() {
 		panic(fmt.Sprintf("blockSize %d > maxSize %d", blockSize, s.MaxSize()))
@@ -97,7 +97,7 @@ func (o *Operator) NewWriter(ctx context.Context, s cadata.Poster, salt *[32]byt
 	DeriveKey(rawSalt[:], salt, []byte("raw"))
 	return &Writer{
 		ctx:             ctx,
-		o:               o,
+		ag:              ag,
 		s:               s,
 		blockSize:       blockSize,
 		branchingFactor: blockSize / maxRefSize,
@@ -142,7 +142,7 @@ func (w *Writer) Finish(ctx context.Context) (*Root, error) {
 }
 
 func (w *Writer) postBuf(ctx context.Context) error {
-	ref, err := w.o.post(w.ctx, w.s, w.rawSalt, w.buf)
+	ref, err := w.ag.post(w.ctx, w.s, w.rawSalt, w.buf)
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (w *Writer) addRef(ctx context.Context, i int, ref Ref) error {
 	if w.counts[i] < w.branchingFactor {
 		return nil
 	}
-	ref2, err := w.o.post(ctx, w.s, w.indexSalt, w.indexes[i].x)
+	ref2, err := w.ag.post(ctx, w.s, w.indexSalt, w.indexes[i].x)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 	for i := 0; i < len(w.indexes); i++ {
 		if i == len(w.indexes)-1 {
 			if w.counts[i] == 0 {
-				return w.o.post(w.ctx, w.s, w.indexSalt, nil)
+				return w.ag.post(w.ctx, w.s, w.indexSalt, nil)
 			}
 			if w.counts[i] == 1 {
 				ref := w.indexes[i].Get(0)
@@ -185,7 +185,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 			}
 		}
 		if w.counts[i] > 0 {
-			ref, err := w.o.post(ctx, w.s, w.indexSalt, w.indexes[i].x)
+			ref, err := w.ag.post(ctx, w.s, w.indexSalt, w.indexes[i].x)
 			if err != nil {
 				return nil, err
 			}
@@ -198,8 +198,8 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 }
 
 // Create creates a Blob and returns it's Root.
-func (o *Operator) Create(ctx context.Context, s cadata.Poster, salt *[32]byte, r io.Reader) (*Root, error) {
-	w := o.NewWriter(ctx, s, salt)
+func (ag *Agent) Create(ctx context.Context, s cadata.Poster, salt *[32]byte, r io.Reader) (*Root, error) {
+	w := ag.NewWriter(ctx, s, salt)
 	if _, err := io.Copy(w, r); err != nil {
 		return nil, err
 	}
@@ -257,22 +257,22 @@ func branchingFactor(blockSize uint64) uint64 {
 	return blockSize / maxRefSize
 }
 
-func (o *Operator) Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, x Root, fn func(r *Reader) error) error {
+func (ag *Agent) Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, x Root, fn func(r *Reader) error) error {
 	if exists, err := dst.Exists(ctx, x.Ref.CID); err != nil {
 		return err
 	} else if exists {
 		return nil
 	}
-	r := o.NewReader(ctx, src, x)
+	r := ag.NewReader(ctx, src, x)
 	if err := fn(r); err != nil {
 		return err
 	}
-	return o.sync(ctx, dst, src, x.BlockSize, x.Ref, depth(x.Size, x.BlockSize))
+	return ag.sync(ctx, dst, src, x.BlockSize, x.Ref, depth(x.Size, x.BlockSize))
 }
 
-func (o *Operator) sync(ctx context.Context, dst cadata.GetPoster, src cadata.Getter, blockSize uint64, ref Ref, level int) error {
+func (ag *Agent) sync(ctx context.Context, dst cadata.GetPoster, src cadata.Getter, blockSize uint64, ref Ref, level int) error {
 	if level > 0 {
-		if err := o.getF(ctx, src, ref, func(data []byte) error {
+		if err := ag.getF(ctx, src, ref, func(data []byte) error {
 			idx, err := newIndexUsing(data, int(blockSize))
 			if err != nil {
 				return err
@@ -282,7 +282,7 @@ func (o *Operator) sync(ctx context.Context, dst cadata.GetPoster, src cadata.Ge
 				if ref2.CID.IsZero() {
 					break
 				}
-				if err := o.sync(ctx, dst, src, blockSize, ref2, level-1); err != nil {
+				if err := ag.sync(ctx, dst, src, blockSize, ref2, level-1); err != nil {
 					return err
 				}
 			}
@@ -294,13 +294,13 @@ func (o *Operator) sync(ctx context.Context, dst cadata.GetPoster, src cadata.Ge
 	return cadata.Copy(ctx, dst, src, ref.CID)
 }
 
-func (o *Operator) Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
+func (ag *Agent) Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
 	rs := make([]io.Reader, len(roots))
 	for i := range roots {
-		rs[i] = o.NewReader(ctx, s, roots[i])
+		rs[i] = ag.NewReader(ctx, s, roots[i])
 	}
 	mr := io.MultiReader(rs...)
-	w := o.NewWriter(ctx, s, salt)
+	w := ag.NewWriter(ctx, s, salt)
 	if _, err := io.Copy(w, mr); err != nil {
 		return nil, err
 	}

@@ -10,12 +10,12 @@ import (
 
 // Sync ensures that all data referenced by x exists in dst, copying from src if necessary.
 // Sync assumes there are no dangling references, and skips copying data when its existence is implied.
-func (o *Operator) Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, x Ref) error {
+func (ag *Agent) Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, x Ref) error {
 	switch x.Type {
 	case TypeBlob:
-		return o.bfop.Sync(ctx, dst, src, x.Root, func(r *Reader) error { return nil })
+		return ag.bbag.Sync(ctx, dst, src, x.Root, func(r *Reader) error { return nil })
 	case TypeTree:
-		return o.bfop.Sync(ctx, dst, src, x.Root, func(r *Reader) error {
+		return ag.bbag.Sync(ctx, dst, src, x.Root, func(r *Reader) error {
 			tree, err := readTree(r)
 			if err != nil {
 				return err
@@ -24,7 +24,7 @@ func (o *Operator) Sync(ctx context.Context, dst cadata.Store, src cadata.Getter
 			for _, ent := range tree.Entries {
 				ref := ent.Ref
 				group.Go(func() error {
-					return o.Sync(ctx2, dst, src, ref)
+					return ag.Sync(ctx2, dst, src, ref)
 				})
 			}
 			return group.Wait()

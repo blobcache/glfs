@@ -8,40 +8,40 @@ import (
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
-type Option func(*Operator)
+type Option func(*Agent)
 
 // WithSalt sets the salt used for deriving encryption keys.
 func WithSalt(salt [32]byte) Option {
-	return func(o *Operator) {
-		o.salt = &salt
+	return func(ag *Agent) {
+		ag.salt = &salt
 	}
 }
 
-type Operator struct {
+type Agent struct {
 	salt      *[32]byte
 	blockSize int
 
-	bfop *bigblob.Operator
+	bbag *bigblob.Agent
 }
 
-func NewOperator(opts ...Option) *Operator {
-	o := &Operator{
+func NewAgent(opts ...Option) *Agent {
+	o := &Agent{
 		salt:      new([32]byte),
 		blockSize: DefaultBlockSize,
 	}
-	o.bfop = bigblob.NewOperator(bigblob.WithBlockSize(o.blockSize))
+	o.bbag = bigblob.NewAgent(bigblob.WithBlockSize(o.blockSize))
 	return o
 }
 
-func (o *Operator) makeSalt(ty Type) *[32]byte {
+func (ag *Agent) makeSalt(ty Type) *[32]byte {
 	var out [32]byte
-	bigblob.DeriveKey(out[:], o.salt, []byte(ty))
+	bigblob.DeriveKey(out[:], ag.salt, []byte(ty))
 	return &out
 }
 
-var defaultOp = NewOperator()
+var defaultOp = NewAgent()
 
-// PostRaw calls PostRaw on the default Operator
+// PostRaw calls PostRaw on the default Agent
 func PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
 	return defaultOp.PostTyped(ctx, s, ty, r)
 }
@@ -111,27 +111,27 @@ func FilterPaths(ctx context.Context, s GetPoster, root Ref, f func(string) bool
 	return defaultOp.FilterPaths(ctx, s, root, f)
 }
 
-// ShardLeaves calls ShardLeaves on the default Operator
+// ShardLeaves calls ShardLeaves on the default Agent
 func ShardLeaves(ctx context.Context, s GetPoster, root Ref, n int) ([]Ref, error) {
 	return defaultOp.ShardLeaves(ctx, s, root, n)
 }
 
-// MapBlobs calls MapBlobs on the default Operator
+// MapBlobs calls MapBlobs on the default Agent
 func MapBlobs(ctx context.Context, s GetPoster, root Ref, f BlobMapper) (*Ref, error) {
 	return defaultOp.MapBlobs(ctx, s, root, f)
 }
 
-// MapLeaves calls MapLeaves on the default Operator
+// MapLeaves calls MapLeaves on the default Agent
 func MapLeaves(ctx context.Context, s GetPoster, root Ref, f RefMapper) (*Ref, error) {
 	return defaultOp.MapLeaves(ctx, s, root, f)
 }
 
-// MapEntryAt calls MapEntryAt on the default Operator
+// MapEntryAt calls MapEntryAt on the default Agent
 func MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
 	return defaultOp.MapEntryAt(ctx, s, root, p, f)
 }
 
-// Merge calls Merge on the default Operator
+// Merge calls Merge on the default Agent
 func Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Ref, error) {
 	return defaultOp.Merge(ctx, store, layers...)
 }

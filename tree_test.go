@@ -124,7 +124,7 @@ func logTree(ctx context.Context, t *testing.T, s cadata.Store, ref Ref) {
 
 func logRaw(t *testing.T, s cadata.Store, ref Ref) {
 	ctx := context.TODO()
-	r := defaultOp.bfop.NewReader(ctx, s, ref.Root)
+	r := defaultOp.bbag.NewReader(ctx, s, ref.Root)
 	data, _ := io.ReadAll(r)
 	t.Log(string(data))
 }

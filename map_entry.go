@@ -10,12 +10,12 @@ import (
 
 type TreeEntryMapper func(ent TreeEntry) (*TreeEntry, error)
 
-func (o *Operator) MapEntries(ctx context.Context, s GetPoster, root Ref, f TreeEntryMapper) (*Ref, error) {
+func (ag *Agent) MapEntries(ctx context.Context, s GetPoster, root Ref, f TreeEntryMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeBlob:
 		return &root, nil
 	case TypeTree:
-		tree, err := o.GetTree(ctx, s, root)
+		tree, err := ag.GetTree(ctx, s, root)
 		if err != nil {
 			return nil, err
 		}
@@ -27,20 +27,20 @@ func (o *Operator) MapEntries(ctx context.Context, s GetPoster, root Ref, f Tree
 			}
 			tree2.Entries[i] = *ent2
 		}
-		return o.PostTree(ctx, s, tree2)
+		return ag.PostTree(ctx, s, tree2)
 	default:
 		panic(root.Type)
 	}
 }
 
-func (o *Operator) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
+func (ag *Agent) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
 	if p == "" {
 		return nil, errors.New("MapEntryAt cannot operate on empty path")
 	}
 	parts := strings.SplitN(p, "/", 2)
 	switch root.Type {
 	case TypeTree:
-		tree, err := o.GetTree(ctx, s, root)
+		tree, err := ag.GetTree(ctx, s, root)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +57,7 @@ func (o *Operator) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p stri
 			}
 			tree.Replace(*ent2)
 		} else {
-			ref2, err := o.MapEntryAt(ctx, s, ent.Ref, parts[1], f)
+			ref2, err := ag.MapEntryAt(ctx, s, ent.Ref, parts[1], f)
 			if err != nil {
 				return nil, err
 			}
@@ -65,7 +65,7 @@ func (o *Operator) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p stri
 			ent2.Ref = *ref2
 			tree.Replace(ent2)
 		}
-		return o.PostTree(ctx, s, *tree)
+		return ag.PostTree(ctx, s, *tree)
 	default:
 		return nil, fmt.Errorf("MapEntry cannot traverse object type: %s", root.Type)
 	}

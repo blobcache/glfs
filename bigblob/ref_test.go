@@ -11,12 +11,12 @@ import (
 
 func TestRefPostGet(t *testing.T) {
 	ctx := context.TODO()
-	op := NewOperator()
+	ag := NewAgent()
 	s := cadata.NewMem(cadata.DefaultHash, 1<<10)
 	testData := "test data"
-	ref, err := op.post(ctx, s, new([32]byte), []byte(testData))
+	ref, err := ag.post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)
-	err = op.getF(ctx, s, *ref, func(data []byte) error {
+	err = ag.getF(ctx, s, *ref, func(data []byte) error {
 		require.Equal(t, testData, string(data))
 		return nil
 	})
@@ -25,10 +25,10 @@ func TestRefPostGet(t *testing.T) {
 
 func TestRefMarshal(t *testing.T) {
 	ctx := context.TODO()
-	op := NewOperator()
+	ag := NewAgent()
 	s := cadata.NewMem(cadata.DefaultHash, 1<<10)
 	testData := "test data"
-	ref, err := op.post(ctx, s, new([32]byte), []byte(testData))
+	ref, err := ag.post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)
 
 	data := marshalRef(*ref)

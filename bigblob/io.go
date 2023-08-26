@@ -13,16 +13,16 @@ var (
 )
 
 type Reader struct {
-	o      *Operator
+	o      *Agent
 	ctx    context.Context
 	store  cadata.Getter
 	root   Root
 	offset int64
 }
 
-func (o *Operator) NewReader(ctx context.Context, s cadata.Getter, root Root) *Reader {
+func (ag *Agent) NewReader(ctx context.Context, s cadata.Getter, root Root) *Reader {
 	return &Reader{
-		o:     o,
+		o:     ag,
 		ctx:   ctx,
 		store: s,
 		root:  root,

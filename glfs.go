@@ -47,8 +47,8 @@ func (a Ref) Equals(b Ref) bool {
 
 // PostTyped posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
-func (o *Operator) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
-	tw := o.NewTypedWriter(ctx, s, ty)
+func (ag *Agent) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
+	tw := ag.NewTypedWriter(ctx, s, ty)
 	if _, err := io.Copy(tw, r); err != nil {
 		return nil, err
 	}
@@ -57,11 +57,11 @@ func (o *Operator) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io
 
 // GetTyped retrieves the object in s at x.
 // If x.Type != ty, ErrRefType is returned.
-func (o *Operator) GetTyped(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
+func (ag *Agent) GetTyped(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
 	if ty != "" && x.Type != ty {
 		return nil, ErrRefType{Have: x.Type, Want: TypeBlob}
 	}
-	return o.bfop.NewReader(ctx, s, x.Root), nil
+	return ag.bbag.NewReader(ctx, s, x.Root), nil
 }
 
 type TypedWriter struct {
@@ -82,8 +82,8 @@ func (tw *TypedWriter) Finish(ctx context.Context) (*Ref, error) {
 }
 
 // NewTypedWriter returns a new writer for ty.
-func (o *Operator) NewTypedWriter(ctx context.Context, s cadata.Poster, ty Type) *TypedWriter {
-	return &TypedWriter{ty: ty, bw: o.bfop.NewWriter(ctx, s, o.makeSalt(ty))}
+func (ag *Agent) NewTypedWriter(ctx context.Context, s cadata.Poster, ty Type) *TypedWriter {
+	return &TypedWriter{ty: ty, bw: ag.bbag.NewWriter(ctx, s, ag.makeSalt(ty))}
 }
 
 // SizeOf returns the size of the data at x

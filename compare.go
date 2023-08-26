@@ -16,7 +16,7 @@ type Diff struct {
 
 // Compare compares left and right and returns a diff.
 // Left and right must both point only to data in s.
-func (o *Operator) Compare(ctx context.Context, s GetPoster, left, right Ref) (*Diff, error) {
+func (ag *Agent) Compare(ctx context.Context, s GetPoster, left, right Ref) (*Diff, error) {
 	if left.Type != right.Type {
 		return &Diff{
 			Left:  &left,
@@ -25,15 +25,15 @@ func (o *Operator) Compare(ctx context.Context, s GetPoster, left, right Ref) (*
 	}
 	switch left.Type {
 	case TypeTree:
-		lTree, err := o.GetTree(ctx, s, left)
+		lTree, err := ag.GetTree(ctx, s, left)
 		if err != nil {
 			return nil, err
 		}
-		rTree, err := o.GetTree(ctx, s, right)
+		rTree, err := ag.GetTree(ctx, s, right)
 		if err != nil {
 			return nil, err
 		}
-		return o.compareTrees(ctx, s, *lTree, *rTree)
+		return ag.compareTrees(ctx, s, *lTree, *rTree)
 	default:
 		if left.Equals(right) {
 			return &Diff{Both: &left}, nil
@@ -46,12 +46,12 @@ func (o *Operator) Compare(ctx context.Context, s GetPoster, left, right Ref) (*
 	}
 }
 
-func (o *Operator) compareTrees(ctx context.Context, s GetPoster, lTree, rTree Tree) (*Diff, error) {
+func (ag *Agent) compareTrees(ctx context.Context, s GetPoster, lTree, rTree Tree) (*Diff, error) {
 	onlyLeft := onlyInFirst(lTree, rTree)
 	onlyRight := onlyInFirst(rTree, lTree)
 	var both []TreeEntry
 	if err := forEachInBoth(rTree, lTree, func(lEnt, rEnt TreeEntry) error {
-		diff, err := o.Compare(ctx, s, lEnt.Ref, rEnt.Ref)
+		diff, err := ag.Compare(ctx, s, lEnt.Ref, rEnt.Ref)
 		if err != nil {
 			return err
 		}
@@ -83,17 +83,17 @@ func (o *Operator) compareTrees(ctx context.Context, s GetPoster, lTree, rTree T
 	var err error
 	var diff Diff
 	if len(onlyLeft) > 0 {
-		if diff.Left, err = o.PostTreeEntries(ctx, s, onlyLeft); err != nil {
+		if diff.Left, err = ag.PostTreeEntries(ctx, s, onlyLeft); err != nil {
 			return nil, err
 		}
 	}
 	if len(onlyRight) > 0 {
-		if diff.Right, err = o.PostTreeEntries(ctx, s, onlyRight); err != nil {
+		if diff.Right, err = ag.PostTreeEntries(ctx, s, onlyRight); err != nil {
 			return nil, err
 		}
 	}
 	if len(both) > 0 {
-		if diff.Both, err = o.PostTreeEntries(ctx, s, both); err != nil {
+		if diff.Both, err = ag.PostTreeEntries(ctx, s, both); err != nil {
 			return nil, err
 		}
 	}

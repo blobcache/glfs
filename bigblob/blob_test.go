@@ -46,13 +46,13 @@ func TestDepth(t *testing.T) {
 func TestCreateFile(t *testing.T) {
 	const defaultMaxSize = 1 << 20
 	ctx := context.Background()
-	op := NewOperator()
+	ag := NewAgent()
 	s := cadata.NewMem(cadata.DefaultHash, defaultMaxSize)
 
 	const size = defaultMaxSize * 3
 	rng := rand.New(rand.NewSource(0))
 	r := io.LimitReader(rng, size)
-	f, err := op.Create(ctx, s, nil, r)
+	f, err := ag.Create(ctx, s, nil, r)
 	require.Nil(t, err)
 	require.NotNil(t, f)
 	require.Equal(t, uint64(size), f.Size)
@@ -94,13 +94,13 @@ func TestCreateRead(t *testing.T) {
 
 func testCreateRead(t *testing.T, size, blockSize int) {
 	ctx := context.Background()
-	op := NewOperator()
+	ag := NewAgent()
 	s := cadata.NewMem(cadata.DefaultHash, blockSize)
 	newRNG := func() io.Reader { return io.LimitReader(rand.New(rand.NewSource(0)), int64(size)) }
 
-	root, err := op.Create(ctx, s, nil, newRNG())
+	root, err := ag.Create(ctx, s, nil, newRNG())
 	require.NoError(t, err)
-	r := op.NewReader(ctx, s, *root)
+	r := ag.NewReader(ctx, s, *root)
 	streamsEqual(t, newRNG(), r)
 }
 
