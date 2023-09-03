@@ -1,11 +1,13 @@
 package glfs
 
 import (
-	"bytes"
 	"context"
-	"log"
+	"runtime"
+	"sync"
+	"sync/atomic"
 
 	"github.com/brendoncarroll/go-state/cadata"
+	"golang.org/x/sync/semaphore"
 )
 
 type GetListDeleter interface {
@@ -14,74 +16,94 @@ type GetListDeleter interface {
 	cadata.Deleter
 }
 
-type GCStats struct {
-	Reachable int
-	Scanned   int
-	Deleted   int
+type GCResult struct {
+	Reachable uint64
+	Scanned   uint64
+	Deleted   uint64
 }
 
-type idSet map[cadata.ID]struct{}
+type gcConfig struct{}
+
+type GCOption func(*gcConfig)
 
 // GC will remove objects from store which are not referenced by any of the refs in keep.
 // If GC does not successfully complete, referential integrity may be violated, and GC will need
 // to be run to completion before it is safe to call Sync on the store again.
-func (ag *Agent) GC(ctx context.Context, store GetListDeleter, prefix []byte, keep []Ref) (*GCStats, error) {
+func (ag *Agent) GC(ctx context.Context, store GetListDeleter, keep []Ref, opts ...GCOption) (*GCResult, error) {
 	// compute reachable
-	reachable, reachableTrees := idSet{}, idSet{}
+	reachable := &idSet{}
 	for _, ref := range keep {
-		if err := ag.gcCollect(ctx, store, prefix, reachable, reachableTrees, ref); err != nil {
+		if err := ag.Populate(ctx, store, ref, reachable); err != nil {
 			return nil, err
 		}
 	}
-	log.Println("computed reachable", len(reachable))
+
 	// iterate through prefix and delete
-	scanned := 0
-	deleted := 0
+	var scanned, deleted atomic.Uint64
+	// TODO: parallelize
 	if err := cadata.ForEach(ctx, store, cadata.Span{}, func(id cadata.ID) error {
-		if !bytes.HasPrefix(id[:], prefix) {
-			return nil
-		}
-		scanned++
-		if _, exists := reachable[id]; !exists {
+		scanned.Add(1)
+		if _, exists := reachable.m[id]; !exists {
 			if err := store.Delete(ctx, id); err != nil {
 				return err
 			}
-			deleted++
+			deleted.Add(1)
 		}
 		return nil
 	}); err != nil {
 		return nil, err
 	}
-	return &GCStats{
-		Reachable: len(reachable),
-		Scanned:   scanned,
-		Deleted:   deleted,
+	return &GCResult{
+		Reachable: uint64(reachable.Len()),
+		Scanned:   scanned.Load(),
+		Deleted:   deleted.Load(),
 	}, nil
 }
 
-func (ag *Agent) gcCollect(ctx context.Context, store GetListDeleter, prefix []byte, reachable, trees idSet, x Ref) error {
-	switch x.Type {
-	case TypeTree:
-		if _, exists := trees[x.Ref.CID]; exists {
-			return nil
-		}
-		tree, err := ag.GetTree(ctx, store, x)
-		if err != nil {
-			return err
-		}
-		for _, ent := range tree.Entries {
-			if err := ag.gcCollect(ctx, store, prefix, reachable, trees, ent.Ref); err != nil {
-				return err
+type AddExister interface {
+	cadata.Adder
+	cadata.Exister
+}
+
+// Populate adds everything reachable form x to dst
+func (ag *Agent) Populate(ctx context.Context, store GetListDeleter, x Ref, dst AddExister) error {
+	sem := semaphore.NewWeighted(int64(runtime.GOMAXPROCS(0)))
+	return ag.Traverse(ctx, store, sem, x, Traverser{
+		Enter: func(ctx context.Context, id cadata.ID) (bool, error) {
+			exists, err := dst.Exists(ctx, id)
+			if err != nil {
+				return false, err
 			}
-		}
-		if bytes.HasPrefix(x.Ref.CID[:], prefix) {
-			reachable[x.Ref.CID] = struct{}{}
-			trees[x.Ref.CID] = struct{}{}
-		}
-	default:
-		if bytes.HasPrefix(x.Ref.CID[:], prefix) {
-			reachable[x.Ref.CID] = struct{}{}
-		}
+			return !exists, nil
+		},
+		Exit: func(ctx context.Context, ref Ref) error {
+			return dst.Add(ctx, ref.CID)
+		},
+	})
+}
+
+type idSet struct {
+	mu sync.RWMutex
+	m  map[cadata.ID]struct{}
+}
+
+func (s *idSet) Add(ctx context.Context, id cadata.ID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.m == nil {
+		s.m = make(map[cadata.ID]struct{})
 	}
+	s.m[id] = struct{}{}
 	return nil
+}
+
+func (s *idSet) Exists(ctx context.Context, id cadata.ID) (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, exists := s.m[id]
+	return exists, nil
+}
+
+func (s *idSet) Len() int {
+	return len(s.m)
 }

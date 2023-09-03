@@ -139,6 +139,6 @@ func Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Ref, error) {
 // GC will remove objects from store which are not referenced by any of the refs in keep.
 // If GC does not successfully complete, referential integrity may be violated, and GC will need
 // to be run to completion before it is safe to call Sync on the store again.
-func GC(ctx context.Context, store GetListDeleter, prefix []byte, keep ...Ref) (*GCStats, error) {
-	return defaultOp.GC(ctx, store, prefix, keep)
+func GC(ctx context.Context, store GetListDeleter, keep []Ref, opts ...GCOption) (*GCResult, error) {
+	return defaultOp.GC(ctx, store, keep, opts...)
 }
