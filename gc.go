@@ -77,7 +77,7 @@ func (ag *Agent) Populate(ctx context.Context, store GetListDeleter, x Ref, dst 
 			}
 			return !exists, nil
 		},
-		Exit: func(ctx context.Context, ref bigblob.Ref) error {
+		Exit: func(ctx context.Context, ty Type, level int, ref bigblob.Ref) error {
 			return dst.Add(ctx, ref.CID)
 		},
 	})

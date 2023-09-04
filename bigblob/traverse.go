@@ -2,6 +2,7 @@ package bigblob
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/brendoncarroll/go-state/cadata"
 	"golang.org/x/sync/semaphore"
@@ -14,6 +15,9 @@ type Traverser struct {
 }
 
 func (ag *Agent) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, root Root, tr Traverser) error {
+	if root.BlockSize == 0 {
+		return fmt.Errorf("block size cannot be zero")
+	}
 	return ag.traverse(ctx, s, sem, root.BlockSize, depth(root.Size, root.BlockSize), root.Ref, tr)
 }
 
