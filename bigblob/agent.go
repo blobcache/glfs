@@ -3,6 +3,7 @@ package bigblob
 import (
 	"sync"
 
+	"github.com/brendoncarroll/go-state/cadata"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -69,4 +70,9 @@ func newCache(size int) *lru.Cache {
 		panic(err)
 	}
 	return cache
+}
+
+type AddExister interface {
+	cadata.Adder
+	cadata.Exister
 }

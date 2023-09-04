@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/blobcache/glfs/bigblob"
 	"github.com/brendoncarroll/go-state/cadata"
 	"golang.org/x/sync/semaphore"
 )
@@ -76,7 +77,7 @@ func (ag *Agent) Populate(ctx context.Context, store GetListDeleter, x Ref, dst 
 			}
 			return !exists, nil
 		},
-		Exit: func(ctx context.Context, ref Ref) error {
+		Exit: func(ctx context.Context, ref bigblob.Ref) error {
 			return dst.Add(ctx, ref.CID)
 		},
 	})

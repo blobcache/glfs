@@ -3,6 +3,7 @@ package glfs
 import (
 	"context"
 
+	"github.com/blobcache/glfs/bigblob"
 	"github.com/brendoncarroll/go-state/cadata"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
@@ -12,7 +13,7 @@ type Traverser struct {
 	// Enter is called before visiting a node, if false is returned the node is skipped.
 	Enter func(ctx context.Context, id cadata.ID) (bool, error)
 	// Exit is called before leaving a node.  After all it's children have been visited.
-	Exit func(ctx context.Context, ref Ref) error
+	Exit func(ctx context.Context, ref bigblob.Ref) error
 }
 
 func (ag *Agent) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, x Ref, tr Traverser) error {
@@ -52,5 +53,10 @@ func (ag *Agent) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.W
 			return err
 		}
 	}
-	return tr.Exit(ctx, x)
+	return ag.bbag.Traverse(ctx, s, sem, x.Root, bigblob.Traverser{
+		Enter: tr.Enter,
+		Exit: func(ctx context.Context, level int, ref bigblob.Ref) error {
+			return tr.Exit(ctx, ref)
+		},
+	})
 }

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"math/bits"
+	"runtime"
 
 	"github.com/brendoncarroll/go-state/cadata"
+	"golang.org/x/sync/semaphore"
 )
 
 // Root is the root of a blob represented as a tree of fixed sized content-addressed blocks
@@ -292,6 +294,22 @@ func (ag *Agent) sync(ctx context.Context, dst cadata.GetPoster, src cadata.Gett
 		}
 	}
 	return cadata.Copy(ctx, dst, src, ref.CID)
+}
+
+func (ag *Agent) Populate(ctx context.Context, s cadata.Getter, root Root, dst AddExister) error {
+	sem := semaphore.NewWeighted(int64(runtime.GOMAXPROCS(0)))
+	return ag.Traverse(ctx, s, sem, root, Traverser{
+		Enter: func(ctx context.Context, id cadata.ID) (bool, error) {
+			yes, err := dst.Exists(ctx, id)
+			if err != nil {
+				return false, err
+			}
+			return !yes, nil
+		},
+		Exit: func(ctx context.Context, level int, ref Ref) error {
+			return dst.Add(ctx, ref.CID)
+		},
+	})
 }
 
 func (ag *Agent) Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
