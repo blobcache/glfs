@@ -48,7 +48,8 @@ func (a Ref) Equals(b Ref) bool {
 // PostTyped posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
 func (ag *Agent) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
-	tw := ag.NewTypedWriter(ctx, s, ty)
+	tw := ag.NewTypedWriter(s, ty)
+	tw.SetWriteContext(ctx)
 	if _, err := io.Copy(tw, r); err != nil {
 		return nil, err
 	}
@@ -69,6 +70,10 @@ type TypedWriter struct {
 	bw *bigblob.Writer
 }
 
+func (tw *TypedWriter) SetWriteContext(ctx context.Context) {
+	tw.bw.SetWriteContext(ctx)
+}
+
 func (tw *TypedWriter) Write(data []byte) (int, error) {
 	return tw.bw.Write(data)
 }
@@ -82,8 +87,8 @@ func (tw *TypedWriter) Finish(ctx context.Context) (*Ref, error) {
 }
 
 // NewTypedWriter returns a new writer for ty.
-func (ag *Agent) NewTypedWriter(ctx context.Context, s cadata.Poster, ty Type) *TypedWriter {
-	return &TypedWriter{ty: ty, bw: ag.bbag.NewWriter(ctx, s, ag.makeSalt(ty))}
+func (ag *Agent) NewTypedWriter(s cadata.Poster, ty Type) *TypedWriter {
+	return &TypedWriter{ty: ty, bw: ag.bbag.NewWriter(s, ag.makeSalt(ty))}
 }
 
 // SizeOf returns the size of the data at x

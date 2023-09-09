@@ -13,7 +13,8 @@ func (ag *Agent) MapBlobs(ctx context.Context, s GetPoster, root Ref, f BlobMapp
 		switch x.Type {
 		case TypeBlob:
 			r := ag.bbag.NewReader(ctx, s, x.Root)
-			w := ag.NewBlobWriter(ctx, s)
+			w := ag.NewBlobWriter(s)
+			w.SetWriteContext(ctx)
 			if err := f(p, r, w); err != nil {
 				return nil, err
 			}

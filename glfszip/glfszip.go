@@ -19,7 +19,8 @@ func Import(ctx context.Context, ag *glfs.Agent, s cadata.Poster, zr *zip.Reader
 		}
 		if err := func() error {
 			defer rc.Close()
-			w := ag.NewBlobWriter(ctx, s)
+			w := ag.NewBlobWriter(s)
+			w.SetWriteContext(ctx)
 			if _, err := io.Copy(w, rc); err != nil {
 				return err
 			}

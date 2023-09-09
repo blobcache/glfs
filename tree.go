@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"sort"
 	"strings"
 
+	"github.com/brendoncarroll/go-exp/streams"
 	"github.com/brendoncarroll/go-state/cadata"
 )
 
@@ -61,7 +61,6 @@ func (t *Tree) UnmarshalText(x []byte) error {
 		}
 		ent := TreeEntry{}
 		if err := json.Unmarshal(line, &ent); err != nil {
-			log.Println("line:", string(line))
 			err = fmt.Errorf("unmarshaling tree: %w", err)
 			return err
 		}
@@ -159,28 +158,28 @@ func (ag *Agent) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, su
 
 // PostTree writes a tree to CA storage and returns a Ref pointing to it.
 func (ag *Agent) PostTree(ctx context.Context, store cadata.Poster, t Tree) (*Ref, error) {
-	data, err := t.MarshalText()
-	if err != nil {
-		return nil, err
+	tw := ag.NewTreeWriter(store)
+	sort.SliceStable(t.Entries, t.sorter)
+	for _, ent := range t.Entries {
+		if err := tw.Put(ctx, ent); err != nil {
+			return nil, err
+		}
 	}
-	root, err := ag.bbag.Create(ctx, store, ag.makeSalt(TypeTree), bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	return &Ref{
-		Type: TypeTree,
-		Root: *root,
-	}, nil
+	return tw.Finish(ctx)
 }
 
 // GetTree retreives the tree in store at Ref if it exists.
 // If ref.Type != TypeTree ErrRefType is returned.
 func (ag *Agent) GetTree(ctx context.Context, store cadata.Getter, ref Ref) (*Tree, error) {
-	if ref.Type != TypeTree {
-		return nil, ErrRefType{Have: ref.Type, Want: TypeTree}
+	tr, err := ag.NewTreeReader(store, ref)
+	if err != nil {
+		return nil, err
 	}
-	r := ag.bbag.NewReader(ctx, store, ref.Root)
-	return readTree(r)
+	ents, err := streams.Collect(ctx, tr, 1<<32)
+	if err != nil {
+		return nil, err
+	}
+	return &Tree{Entries: ents}, nil
 }
 
 func readTree(r io.Reader) (*Tree, error) {
@@ -311,4 +310,75 @@ func CleanPath(x string) string {
 
 func IsValidName(x string) bool {
 	return x != "" && !strings.Contains(x, "/")
+}
+
+type TreeWriter struct {
+	tw       *TypedWriter
+	enc      *json.Encoder
+	lastName string
+}
+
+func (ag *Agent) NewTreeWriter(s cadata.Poster) *TreeWriter {
+	tw := ag.NewTypedWriter(s, TypeTree)
+	return &TreeWriter{
+		tw:  tw,
+		enc: json.NewEncoder(tw),
+	}
+}
+
+func (tw *TreeWriter) Put(ctx context.Context, te TreeEntry) error {
+	if te.Name <= tw.lastName {
+		return fmt.Errorf("cannot write tree entries out of order %q <= %q", te.Name, tw.lastName)
+	}
+	tw.tw.SetWriteContext(ctx)
+	defer tw.tw.SetWriteContext(nil)
+	if err := tw.enc.Encode(te); err != nil {
+		return err
+	}
+	tw.lastName = te.Name
+	return nil
+}
+
+func (tw *TreeWriter) Finish(ctx context.Context) (*Ref, error) {
+	return tw.tw.Finish(ctx)
+}
+
+type TreeReader struct {
+	ag  *Agent
+	s   cadata.Getter
+	ref Ref
+
+	dec  *json.Decoder
+	last string
+}
+
+func (ag *Agent) NewTreeReader(s cadata.Getter, x Ref) (*TreeReader, error) {
+	if x.Type != TypeTree {
+		return nil, ErrRefType{Have: x.Type, Want: TypeTree}
+	}
+	return &TreeReader{ag: ag, s: s, ref: x}, nil
+}
+
+func (tr *TreeReader) Next(ctx context.Context, dst *TreeEntry) error {
+	if tr.dec == nil {
+		r, err := tr.ag.GetTyped(ctx, tr.s, TypeTree, tr.ref)
+		if err != nil {
+			return err
+		}
+		tr.dec = json.NewDecoder(r)
+	}
+	if !tr.dec.More() {
+		return streams.EOS()
+	}
+	if err := tr.dec.Decode(dst); err != nil {
+		return err
+	}
+	if dst.Name <= tr.last {
+		return fmt.Errorf("tree entries are out of order: %v <= %v", dst.Name, tr.last)
+	}
+	if err := dst.Validate(); err != nil {
+		return err
+	}
+	tr.last = dst.Name
+	return nil
 }

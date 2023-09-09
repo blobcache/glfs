@@ -29,6 +29,6 @@ func (ag *Agent) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref) ([]by
 	return io.ReadAll(r)
 }
 
-func (ag *Agent) NewBlobWriter(ctx context.Context, s cadata.Poster) *TypedWriter {
-	return ag.NewTypedWriter(ctx, s, TypeBlob)
+func (ag *Agent) NewBlobWriter(s cadata.Poster) *TypedWriter {
+	return ag.NewTypedWriter(s, TypeBlob)
 }

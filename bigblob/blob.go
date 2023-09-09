@@ -80,7 +80,7 @@ type Writer struct {
 	buf     []byte
 }
 
-func (ag *Agent) NewWriter(ctx context.Context, s cadata.Poster, salt *[32]byte) *Writer {
+func (ag *Agent) NewWriter(s cadata.Poster, salt *[32]byte) *Writer {
 	blockSize := s.MaxSize()
 	if ag.blockSize > 0 {
 		blockSize = ag.blockSize
@@ -98,7 +98,7 @@ func (ag *Agent) NewWriter(ctx context.Context, s cadata.Poster, salt *[32]byte)
 	DeriveKey(indexSalt[:], salt, []byte("index"))
 	DeriveKey(rawSalt[:], salt, []byte("raw"))
 	return &Writer{
-		ctx:             ctx,
+		ctx:             context.TODO(),
 		ag:              ag,
 		s:               s,
 		blockSize:       blockSize,
@@ -109,6 +109,10 @@ func (ag *Agent) NewWriter(ctx context.Context, s cadata.Poster, salt *[32]byte)
 		indexes: []Index{newIndex(blockSize)},
 		counts:  []int{0},
 	}
+}
+
+func (w *Writer) SetWriteContext(ctx context.Context) {
+	w.ctx = ctx
 }
 
 func (w *Writer) Write(data []byte) (int, error) {
@@ -201,7 +205,9 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 
 // Create creates a Blob and returns it's Root.
 func (ag *Agent) Create(ctx context.Context, s cadata.Poster, salt *[32]byte, r io.Reader) (*Root, error) {
-	w := ag.NewWriter(ctx, s, salt)
+	w := ag.NewWriter(s, salt)
+	w.SetWriteContext(ctx)
+	defer w.SetWriteContext(nil)
 	if _, err := io.Copy(w, r); err != nil {
 		return nil, err
 	}
@@ -318,7 +324,8 @@ func (ag *Agent) Concat(ctx context.Context, s cadata.Store, blockSize int, salt
 		rs[i] = ag.NewReader(ctx, s, roots[i])
 	}
 	mr := io.MultiReader(rs...)
-	w := ag.NewWriter(ctx, s, salt)
+	w := ag.NewWriter(s, salt)
+	w.SetWriteContext(ctx)
 	if _, err := io.Copy(w, mr); err != nil {
 		return nil, err
 	}
