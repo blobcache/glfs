@@ -7,7 +7,7 @@ Directories get turned into `tree` type objects, with cryptographic references t
 Blob type objects do not actually correspond 1:1 to a single content addressable blob.
 Large blobs will be broken up into fixed sized chunks.
 Since the chunks are fixed sized, the entire tree structure can be determined based on the size of the object.
-The `bigfile` package handles chunking large streams into blobs which can be stored in content-addressable storage.
+The `bigblob` package handles chunking large streams into blobs which can be stored in content-addressable storage.
 
 Instead of the custom encoding format used by Git for Trees, GLFS uses JSON.
 Trees are implemented as sorted lists of `TreeEntry` objects, serialized using JSON lines.
