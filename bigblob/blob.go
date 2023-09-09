@@ -148,11 +148,11 @@ func (w *Writer) Finish(ctx context.Context) (*Root, error) {
 }
 
 func (w *Writer) postBuf(ctx context.Context) error {
-	ref, err := w.ag.post(w.ctx, w.s, w.rawSalt, w.buf)
+	ref, err := w.ag.post(ctx, w.s, w.rawSalt, w.buf)
 	if err != nil {
 		return err
 	}
-	if err := w.addRef(w.ctx, 0, *ref); err != nil {
+	if err := w.addRef(ctx, 0, *ref); err != nil {
 		return err
 	}
 	w.size += uint64(len(w.buf))
