@@ -1,6 +1,7 @@
 package glfs
 
 import (
+	"bytes"
 	"context"
 	"io"
 
@@ -21,14 +22,23 @@ func (ag *Agent) GetBlob(ctx context.Context, s cadata.Getter, x Ref) (*Reader, 
 }
 
 // GetBlobBytes reads the entire contents of the blob at x into memory and returns the slice of bytes.
-func (ag *Agent) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref) ([]byte, error) {
+func (ag *Agent) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSize int) ([]byte, error) {
 	r, err := ag.GetBlob(ctx, s, x)
 	if err != nil {
 		return nil, err
 	}
-	return io.ReadAll(r)
+	return readAtMost(r, maxSize)
 }
 
 func (ag *Agent) NewBlobWriter(s cadata.Poster) *TypedWriter {
 	return ag.NewTypedWriter(s, TypeBlob)
+}
+
+func readAtMost(r io.Reader, maxSize int) ([]byte, error) {
+	var buf bytes.Buffer
+	r = io.LimitReader(r, int64(maxSize))
+	if _, err := buf.ReadFrom(r); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

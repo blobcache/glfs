@@ -15,6 +15,8 @@ import (
 	"github.com/blobcache/glfs"
 )
 
+const MaxPathLen = 4096
+
 // WriteTAR writes the GLFS filesystem at root to tw.
 func WriteTAR(ctx context.Context, ag *glfs.Agent, s cadata.Getter, root glfs.Ref, tw *tar.Writer) error {
 	if root.Type == glfs.TypeBlob {
@@ -39,27 +41,31 @@ func WriteTAR(ctx context.Context, ag *glfs.Agent, s cadata.Getter, root glfs.Re
 		mode := ent.FileMode
 		switch ent.Ref.Type {
 		case glfs.TypeBlob:
-			data, err := ag.GetBlobBytes(ctx, s, ent.Ref)
-			if err != nil {
-				return err
-			}
 			th := &tar.Header{
 				Name: p,
 				Mode: int64(mode),
 			}
 			switch {
 			case os.FileMode(mode)&os.ModeSymlink > 0:
+				data, err := ag.GetBlobBytes(ctx, s, ent.Ref, MaxPathLen)
+				if err != nil {
+					return err
+				}
 				th.Typeflag = tar.TypeSymlink
 				th.Linkname = string(data)
 			default:
 				th.Typeflag = tar.TypeReg
-				th.Size = int64(len(data))
+				th.Size = int64(ent.Ref.Size)
 			}
 			if err := tw.WriteHeader(th); err != nil {
 				return err
 			}
 			if th.Size > 0 {
-				if _, err := tw.Write(data); err != nil {
+				r, err := ag.GetBlob(ctx, s, ent.Ref)
+				if err != nil {
+					return err
+				}
+				if _, err := io.Copy(tw, r); err != nil {
 					return err
 				}
 			}

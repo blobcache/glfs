@@ -57,8 +57,8 @@ func GetBlob(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
 }
 
 // GetBlobBytes reads the entire contents of the blob at x into memory and returns the slice of bytes.
-func GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref) ([]byte, error) {
-	return defaultOp.GetBlobBytes(ctx, s, x)
+func GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSize int) ([]byte, error) {
+	return defaultOp.GetBlobBytes(ctx, s, x, maxSize)
 }
 
 // PostTree writes a tree to CA storage and returns a Ref pointing to it.
