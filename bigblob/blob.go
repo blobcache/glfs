@@ -15,7 +15,7 @@ import (
 type Root struct {
 	Ref
 	Size      uint64 `json:"size"`
-	BlockSize uint64 `json:"block_size"`
+	BlockSize uint64 `json:"blockSize"`
 }
 
 func (r Root) String() string {
