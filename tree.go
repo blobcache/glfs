@@ -151,7 +151,7 @@ func (ag *Agent) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, su
 	}
 	ent := t.Lookup(parts[0])
 	if ent == nil {
-		return nil, &ErrNoEnt{Name: parts[0]}
+		return nil, ErrNoEnt{Name: parts[0]}
 	}
 	return ag.GetAtPath(ctx, store, ent.Ref, parts[1])
 }

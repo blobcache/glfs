@@ -61,6 +61,21 @@ func TestPostTreeFromEntries(t *testing.T) {
 	}
 }
 
+func TestTreeNoEnt(t *testing.T) {
+	ctx := context.TODO()
+	s := newStore(t)
+	m1 := map[string]Ref{
+		"dir1/file1.1": blobRef(),
+		"dir1/file1.2": blobRef(),
+		"dir2/file2.1": blobRef(),
+	}
+	ref, err := PostTreeMap(ctx, s, m1)
+	require.NoError(t, err)
+
+	_, err = GetAtPath(ctx, s, *ref, "should-not-exist")
+	require.True(t, IsErrNoEnt(err))
+}
+
 func TestMergeSubtrees(t *testing.T) {
 	ctx := context.TODO()
 	s := newStore(t)
