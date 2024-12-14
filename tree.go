@@ -12,8 +12,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/brendoncarroll/go-exp/streams"
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/exp/streams"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 // Tree is a directory of entries to other trees or blobs

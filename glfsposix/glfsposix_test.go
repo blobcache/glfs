@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/blobcache/glfs"
-	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/brendoncarroll/go-state/posixfs"
+	"go.brendoncarroll.net/state/cadata"
+	"go.brendoncarroll.net/state/posixfs"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/semaphore"
 )

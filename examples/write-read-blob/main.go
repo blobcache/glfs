@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/blobcache/glfs"
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 func main() {

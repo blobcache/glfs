@@ -3,7 +3,7 @@ package bigblob
 import (
 	"sync"
 
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 	lru "github.com/hashicorp/golang-lru"
 )
 

@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 
 	"github.com/blobcache/glfs"
 )

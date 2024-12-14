@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/blobcache/glfs"
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 	"github.com/stretchr/testify/require"
 )
 

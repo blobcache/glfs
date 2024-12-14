@@ -6,8 +6,8 @@ import (
 	"io"
 	"path"
 
-	"github.com/brendoncarroll/go-state/cadata"
-	"github.com/brendoncarroll/go-state/posixfs"
+	"go.brendoncarroll.net/state/cadata"
+	"go.brendoncarroll.net/state/posixfs"
 	"golang.org/x/sync/semaphore"
 
 	"github.com/blobcache/glfs"

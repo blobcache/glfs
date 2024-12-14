@@ -7,7 +7,7 @@ import (
 	"math/bits"
 	"runtime"
 
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/semaphore"
 )
 

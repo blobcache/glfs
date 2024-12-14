@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"github.com/blobcache/glfs/bigblob"
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 // Merge merges the refs in layers with increasing prescedence.

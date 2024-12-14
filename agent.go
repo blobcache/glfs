@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/blobcache/glfs/bigblob"
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 type Option func(*Agent)

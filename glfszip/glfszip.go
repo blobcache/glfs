@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/blobcache/glfs"
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 // Import creates a glfs.Tree from the contents of a zip.Reader: zr.

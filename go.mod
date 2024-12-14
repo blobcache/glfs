@@ -3,10 +3,10 @@ module github.com/blobcache/glfs
 go 1.21
 
 require (
-	github.com/brendoncarroll/go-exp v0.0.0-20230924170030-cb92b4e6be3a
-	github.com/brendoncarroll/go-state v0.0.0-20230910221854-36bb858ffe8e
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/stretchr/testify v1.8.4
+	go.brendoncarroll.net/exp v0.0.0-20241118183830-280772e567eb
+	go.brendoncarroll.net/state v0.0.0-20241118200920-627c9c196901
 	golang.org/x/crypto v0.13.0
 	golang.org/x/sync v0.3.0
 	lukechampine.com/blake3 v1.2.1

@@ -1,7 +1,3 @@
-github.com/brendoncarroll/go-exp v0.0.0-20230924170030-cb92b4e6be3a h1:M9sRm3FXt9Rs1wYRetapI80BKST0P3J06kyqEro63Xo=
-github.com/brendoncarroll/go-exp v0.0.0-20230924170030-cb92b4e6be3a/go.mod h1:iZpegKOZ/jqkRvtB68fewFt+3jHYDu7iHbI/RVxMc+c=
-github.com/brendoncarroll/go-state v0.0.0-20230910221854-36bb858ffe8e h1:2kbgYtEqttLFV5LxL6yY8Dvjsqg+C4Mm13I0QidSotI=
-github.com/brendoncarroll/go-state v0.0.0-20230910221854-36bb858ffe8e/go.mod h1:hbq8mP6pI19SgIOaJGV30b4CSV+HzmY4jRxkzRwLj+Q=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -22,6 +18,10 @@ github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZV
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+go.brendoncarroll.net/exp v0.0.0-20241118183830-280772e567eb h1:y2ipVu+xk+Vstj592FoTF55Dly2e6M3z4gjFp9+FBc8=
+go.brendoncarroll.net/exp v0.0.0-20241118183830-280772e567eb/go.mod h1:7C3uhanAQUJFF9w9m4Zeif5gDoh1eJlgQ3/aJfuJo9A=
+go.brendoncarroll.net/state v0.0.0-20241118200920-627c9c196901 h1:EEzKLl/9qvDlm20k/eSaFV56omRdPKgS5uf2H//OB7A=
+go.brendoncarroll.net/state v0.0.0-20241118200920-627c9c196901/go.mod h1:mLgp/r9TXnMuaQqr9tzS7iS5H6Z97EuQH/Z7hfWeCtM=
 golang.org/x/crypto v0.13.0 h1:mvySKfSWJ+UKUii46M40LOvyWfN0s2U+46/jDd0e6Ck=
 golang.org/x/crypto v0.13.0/go.mod h1:y6Z2r+Rw4iayiXXAIxJIDAJ1zMW4yaTpebo8fPOliYc=
 golang.org/x/exp v0.0.0-20230905200255-921286631fa9 h1:GoHiUyI/Tp2nVkLI2mCxVkOjsbSXD66ic0XW0js0R9g=

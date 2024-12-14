@@ -10,7 +10,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/brendoncarroll/go-state/cadata"
+	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/crypto/chacha20"
 	"lukechampine.com/blake3"
 )
