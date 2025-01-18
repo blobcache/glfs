@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.brendoncarroll.net/state/cadata"
 	"github.com/stretchr/testify/require"
+	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/blobcache/glfs"
@@ -20,7 +20,7 @@ import (
 
 var corpus = []string{
 	//"https://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04-base-amd64.tar.gz",
-	"https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/alpine-minirootfs-3.17.0-x86_64.tar.gz",
+	"https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/alpine-minirootfs-3.21.0-x86_64.tar.gz",
 }
 
 func TestReadTAR(t *testing.T) {

@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/blobcache/glfs/bigblob"
 	"go.brendoncarroll.net/exp/streams"
 	"go.brendoncarroll.net/state/cadata"
 )
@@ -175,9 +176,16 @@ func (ag *Agent) GetTree(ctx context.Context, store cadata.Getter, ref Ref) (*Tr
 	if err != nil {
 		return nil, err
 	}
-	ents, err := streams.Collect(ctx, tr, 1<<32)
-	if err != nil {
-		return nil, err
+	var ents []TreeEntry
+	for {
+		var ent TreeEntry
+		if err := tr.Next(ctx, &ent); err != nil {
+			if streams.IsEOS(err) {
+				break
+			}
+			return nil, err
+		}
+		ents = append(ents, ent)
 	}
 	return &Tree{Entries: ents}, nil
 }
@@ -348,6 +356,7 @@ type TreeReader struct {
 	s   cadata.Getter
 	ref Ref
 
+	r    *bigblob.Reader
 	dec  *json.Decoder
 	last string
 }
@@ -365,9 +374,14 @@ func (tr *TreeReader) Next(ctx context.Context, dst *TreeEntry) error {
 		if err != nil {
 			return err
 		}
+		tr.r = r
 		tr.dec = json.NewDecoder(r)
 	}
+
 	if !tr.dec.More() {
+		if _, err := tr.r.Read(nil); !errors.Is(err, io.EOF) {
+			return err
+		}
 		return streams.EOS()
 	}
 	if err := tr.dec.Decode(dst); err != nil {
