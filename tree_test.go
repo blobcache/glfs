@@ -67,7 +67,7 @@ func TestMergeSubtrees(t *testing.T) {
 		layers = append(layers, *ref)
 	}
 
-	ref, err := Merge(ctx, s, layers...)
+	ref, err := Merge(ctx, s, s, layers...)
 	require.Nil(t, err)
 	tree, err := GetTreeSlice(ctx, s, *ref, 2)
 	require.Nil(t, err)

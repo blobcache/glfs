@@ -2,12 +2,12 @@ package glfs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"errors"
+	"go.brendoncarroll.net/state/cadata"
 
 	"github.com/blobcache/glfs/bigblob"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 // Merge merges the refs in layers with increasing prescedence.
@@ -18,7 +18,7 @@ import (
 // Merge(tree1, tree2) -> set of entry names given by tree1 + tree2. value at entry x given by Merge(tree1[x], tree2[x])
 // Although not written as such for performance reasons:
 // Merging(1, 2, 3, 4, 5) == Merge(Merge(Merge(Merge(1, 2), 3), 4), 5)
-func (ag *Agent) Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Ref, error) {
+func (ag *Agent) Merge(ctx context.Context, dst cadata.Poster, src cadata.Getter, layers ...Ref) (*Ref, error) {
 	switch {
 	case len(layers) == 0:
 		panic("merging 0 layers")
@@ -33,7 +33,7 @@ func (ag *Agent) Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Re
 		switch layer.Type {
 		case TypeTree:
 			// TODO: use TreeReader
-			tree, err := ag.GetTreeSlice(ctx, store, layer, 1e6)
+			tree, err := ag.GetTreeSlice(ctx, src, layer, 1e6)
 			if err != nil {
 				return nil, err
 			}
@@ -54,7 +54,7 @@ func (ag *Agent) Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Re
 		for _, ent := range entries {
 			layers2 = append(layers2, ent.Ref)
 		}
-		ref, err := ag.Merge(ctx, store, layers2...)
+		ref, err := ag.Merge(ctx, dst, src, layers2...)
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +65,7 @@ func (ag *Agent) Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Re
 			FileMode: lastEnt.FileMode,
 		})
 	}
-	return ag.PostTreeSlice(ctx, store, tree)
+	return ag.PostTreeSlice(ctx, dst, tree)
 }
 
 func (ag *Agent) Concat(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {

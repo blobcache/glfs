@@ -132,8 +132,8 @@ func MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string, f TreeEntr
 }
 
 // Merge calls Merge on the default Agent
-func Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Ref, error) {
-	return defaultOp.Merge(ctx, store, layers...)
+func Merge(ctx context.Context, dst cadata.Poster, src cadata.Getter, layers ...Ref) (*Ref, error) {
+	return defaultOp.Merge(ctx, dst, src, layers...)
 }
 
 // GC will remove objects from store which are not referenced by any of the refs in keep.

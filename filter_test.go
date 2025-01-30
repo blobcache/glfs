@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"testing"
 
-	"go.brendoncarroll.net/state/cadata"
 	"github.com/stretchr/testify/require"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 func TestShardLeaves(t *testing.T) {
@@ -27,7 +27,7 @@ func TestShardLeaves(t *testing.T) {
 		shards, err := ShardLeaves(ctx, s, *x, 4)
 		require.Nil(t, err)
 		t.Log(shards)
-		y, err := Merge(ctx, s, shards...)
+		y, err := Merge(ctx, s, s, shards...)
 		require.Nil(t, err)
 		logTree(ctx, t, s, *y)
 		require.Equal(t, *x, *y)
