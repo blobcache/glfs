@@ -15,19 +15,20 @@ func (ag *Agent) MapEntries(ctx context.Context, s GetPoster, root Ref, f TreeEn
 	case TypeBlob:
 		return &root, nil
 	case TypeTree:
-		tree, err := ag.GetTree(ctx, s, root)
+		// TODO: use TreeReader
+		tree, err := ag.GetTreeSlice(ctx, s, root, 1e6)
 		if err != nil {
 			return nil, err
 		}
-		tree2 := Tree{Entries: make([]TreeEntry, len(tree.Entries))}
-		for i, ent := range tree.Entries {
+		tree2 := make([]TreeEntry, len(tree))
+		for i, ent := range tree2 {
 			ent2, err := f(ent)
 			if err != nil {
 				return nil, err
 			}
-			tree2.Entries[i] = *ent2
+			tree2[i] = *ent2
 		}
-		return ag.PostTree(ctx, s, tree2)
+		return ag.PostTreeSlice(ctx, s, tree2)
 	default:
 		panic(root.Type)
 	}
@@ -40,12 +41,13 @@ func (ag *Agent) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string
 	parts := strings.SplitN(p, "/", 2)
 	switch root.Type {
 	case TypeTree:
-		tree, err := ag.GetTree(ctx, s, root)
+		// TODO: use TreeReader
+		tree, err := ag.GetTreeSlice(ctx, s, root, 1e6)
 		if err != nil {
 			return nil, err
 		}
 
-		ent := tree.Lookup(parts[0])
+		ent := Lookup(tree, parts[0])
 		if len(parts) == 1 {
 			var ent2 *TreeEntry
 			if ent == nil {
@@ -55,7 +57,7 @@ func (ag *Agent) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string
 			if err != nil {
 				return nil, err
 			}
-			tree.Replace(*ent2)
+			Replace(tree, *ent2)
 		} else {
 			ref2, err := ag.MapEntryAt(ctx, s, ent.Ref, parts[1], f)
 			if err != nil {
@@ -63,9 +65,9 @@ func (ag *Agent) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string
 			}
 			ent2 := *ent
 			ent2.Ref = *ref2
-			tree.Replace(ent2)
+			Replace(tree, ent2)
 		}
-		return ag.PostTree(ctx, s, *tree)
+		return ag.PostTreeSlice(ctx, s, tree)
 	default:
 		return nil, fmt.Errorf("MapEntry cannot traverse object type: %s", root.Type)
 	}

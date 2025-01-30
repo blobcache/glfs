@@ -109,7 +109,7 @@ func ReadTAR(ctx context.Context, ag *glfs.Agent, s cadata.Poster, tr *tar.Reade
 		switch th.Typeflag {
 		case tar.TypeDir:
 			mode |= int64(os.ModeDir)
-			ref, err := ag.PostTree(ctx, s, glfs.Tree{})
+			ref, err := ag.PostTreeSlice(ctx, s, []glfs.TreeEntry{})
 			if err != nil {
 				return nil, err
 			}
@@ -143,7 +143,7 @@ func ReadTAR(ctx context.Context, ag *glfs.Agent, s cadata.Poster, tr *tar.Reade
 	for _, ent := range emptyDirs {
 		ents = append(ents, ent)
 	}
-	return ag.PostTreeEntries(ctx, s, ents)
+	return ag.PostTreeSlice(ctx, s, ents)
 }
 
 func clean(x string) string {

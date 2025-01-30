@@ -28,12 +28,13 @@ func (ag *Agent) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.W
 
 	switch x.Type {
 	case TypeTree:
-		tree, err := ag.GetTree(ctx, s, x)
+		// TODO: use TreeReader
+		tree, err := ag.GetTreeSlice(ctx, s, x, 1e6)
 		if err != nil {
 			return err
 		}
 		eg, ctx := errgroup.WithContext(ctx)
-		for _, ent := range tree.Entries {
+		for _, ent := range tree {
 			ent := ent
 			fn := func() error {
 				return ag.Traverse(ctx, s, sem, ent.Ref, tr)

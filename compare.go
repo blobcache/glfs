@@ -25,15 +25,16 @@ func (ag *Agent) Compare(ctx context.Context, s GetPoster, left, right Ref) (*Di
 	}
 	switch left.Type {
 	case TypeTree:
-		lTree, err := ag.GetTree(ctx, s, left)
+		// TODO: use TreeReader
+		lTree, err := ag.GetTreeSlice(ctx, s, left, 1e6)
 		if err != nil {
 			return nil, err
 		}
-		rTree, err := ag.GetTree(ctx, s, right)
+		rTree, err := ag.GetTreeSlice(ctx, s, right, 1e6)
 		if err != nil {
 			return nil, err
 		}
-		return ag.compareTrees(ctx, s, *lTree, *rTree)
+		return ag.compareTrees(ctx, s, lTree, rTree)
 	default:
 		if left.Equals(right) {
 			return &Diff{Both: &left}, nil
@@ -46,7 +47,7 @@ func (ag *Agent) Compare(ctx context.Context, s GetPoster, left, right Ref) (*Di
 	}
 }
 
-func (ag *Agent) compareTrees(ctx context.Context, s GetPoster, lTree, rTree Tree) (*Diff, error) {
+func (ag *Agent) compareTrees(ctx context.Context, s GetPoster, lTree, rTree []TreeEntry) (*Diff, error) {
 	onlyLeft := onlyInFirst(lTree, rTree)
 	onlyRight := onlyInFirst(rTree, lTree)
 	var both []TreeEntry
@@ -83,35 +84,35 @@ func (ag *Agent) compareTrees(ctx context.Context, s GetPoster, lTree, rTree Tre
 	var err error
 	var diff Diff
 	if len(onlyLeft) > 0 {
-		if diff.Left, err = ag.PostTreeEntries(ctx, s, onlyLeft); err != nil {
+		if diff.Left, err = ag.PostTreeSlice(ctx, s, onlyLeft); err != nil {
 			return nil, err
 		}
 	}
 	if len(onlyRight) > 0 {
-		if diff.Right, err = ag.PostTreeEntries(ctx, s, onlyRight); err != nil {
+		if diff.Right, err = ag.PostTreeSlice(ctx, s, onlyRight); err != nil {
 			return nil, err
 		}
 	}
 	if len(both) > 0 {
-		if diff.Both, err = ag.PostTreeEntries(ctx, s, both); err != nil {
+		if diff.Both, err = ag.PostTreeSlice(ctx, s, both); err != nil {
 			return nil, err
 		}
 	}
 	return &diff, nil
 }
 
-func onlyInFirst(a, b Tree) (ret []TreeEntry) {
-	for _, aEnt := range a.Entries {
-		if bEnt := b.Lookup(aEnt.Name); bEnt == nil {
+func onlyInFirst(a, b []TreeEntry) (ret []TreeEntry) {
+	for _, aEnt := range a {
+		if bEnt := Lookup(b, aEnt.Name); bEnt == nil {
 			ret = append(ret, aEnt)
 		}
 	}
 	return ret
 }
 
-func forEachInBoth(a, b Tree, fn func(l, r TreeEntry) error) error {
-	for _, aEnt := range a.Entries {
-		if bEnt := b.Lookup(aEnt.Name); bEnt != nil {
+func forEachInBoth(a, b []TreeEntry, fn func(l, r TreeEntry) error) error {
+	for _, aEnt := range a {
+		if bEnt := Lookup(b, aEnt.Name); bEnt != nil {
 			if err := fn(aEnt, *bEnt); err != nil {
 				return err
 			}

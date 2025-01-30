@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/blobcache/glfs"
+	"github.com/stretchr/testify/require"
 	"go.brendoncarroll.net/state/cadata"
 	"go.brendoncarroll.net/state/posixfs"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -23,9 +23,9 @@ func TestImport(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, glfs.TypeTree, ref.Type)
 
-	tree, err := ag.GetTree(ctx, s, *ref)
+	tree, err := ag.GetTreeSlice(ctx, s, *ref, 1)
 	require.NoError(t, err)
-	require.Len(t, tree.Entries, 1)
+	require.Len(t, tree, 1)
 }
 
 func TestExport(t *testing.T) {

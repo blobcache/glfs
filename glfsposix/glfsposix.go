@@ -67,7 +67,7 @@ func glfsImport(ctx context.Context, p glfsImportParams) (*glfs.Ref, error) {
 		if err != nil {
 			return nil, err
 		}
-		return p.ag.PostTreeEntries(ctx, p.s, tents)
+		return p.ag.PostTreeSlice(ctx, p.s, tents)
 	}
 	// regular file
 	f, err := p.fs.OpenFile(p.target, posixfs.O_RDONLY, 0)
@@ -111,11 +111,12 @@ func glfsExport(ctx context.Context, p glfsExportParams) error {
 		if err := p.fs.Mkdir(p.target, p.fileMode); err != nil {
 			return err
 		}
-		tree, err := p.ag.GetTree(ctx, p.s, p.ref)
+		// TODO: use TreeReader
+		tree, err := p.ag.GetTreeSlice(ctx, p.s, p.ref, 1e6)
 		if err != nil {
 			return err
 		}
-		return slices2.ParForEach(ctx, p.sem, tree.Entries, func(ctx context.Context, x glfs.TreeEntry) error {
+		return slices2.ParForEach(ctx, p.sem, tree, func(ctx context.Context, x glfs.TreeEntry) error {
 			p2 := p
 			p2.target = path.Join(p.target, x.Name)
 			p2.ref = x.Ref

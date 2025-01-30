@@ -32,11 +32,12 @@ func (ag *Agent) Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Re
 	for _, layer := range layers {
 		switch layer.Type {
 		case TypeTree:
-			tree, err := ag.GetTree(ctx, store, layer)
+			// TODO: use TreeReader
+			tree, err := ag.GetTreeSlice(ctx, store, layer, 1e6)
 			if err != nil {
 				return nil, err
 			}
-			for _, ent := range tree.Entries {
+			for _, ent := range tree {
 				m[ent.Name] = append(m[ent.Name], ent)
 			}
 		case TypeBlob:
@@ -47,7 +48,7 @@ func (ag *Agent) Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Re
 		}
 	}
 
-	tree := Tree{}
+	tree := []TreeEntry{}
 	for key, entries := range m {
 		layers2 := []Ref{}
 		for _, ent := range entries {
@@ -58,13 +59,13 @@ func (ag *Agent) Merge(ctx context.Context, store GetPoster, layers ...Ref) (*Re
 			return nil, err
 		}
 		lastEnt := entries[len(entries)-1]
-		tree.Entries = append(tree.Entries, TreeEntry{
+		tree = append(tree, TreeEntry{
 			Name:     key,
 			Ref:      *ref,
 			FileMode: lastEnt.FileMode,
 		})
 	}
-	return ag.PostTree(ctx, store, tree)
+	return ag.PostTreeSlice(ctx, store, tree)
 }
 
 func (ag *Agent) Concat(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
@@ -101,19 +102,20 @@ func (ag *Agent) concat2(ctx context.Context, store cadata.Store, left, right Re
 }
 
 func (ag *Agent) concat2Trees(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
-	leftTree, err := ag.GetTree(ctx, store, left)
+	// TODO: use TreeReader
+	leftTree, err := ag.GetTreeSlice(ctx, store, left, 1e6)
 	if err != nil {
 		return nil, err
 	}
-	rightTree, err := ag.GetTree(ctx, store, left)
+	rightTree, err := ag.GetTreeSlice(ctx, store, left, 1e6)
 	if err != nil {
 		return nil, err
 	}
 	m := map[string]TreeEntry{}
-	for _, ent := range leftTree.Entries {
+	for _, ent := range leftTree {
 		m[ent.Name] = ent
 	}
-	for _, ent2 := range rightTree.Entries {
+	for _, ent2 := range rightTree {
 		if ent1, exists := m[ent2.Name]; exists {
 			ref, err := ag.Concat(ctx, store, ent1.Ref, ent2.Ref)
 			if err != nil {
@@ -128,11 +130,11 @@ func (ag *Agent) concat2Trees(ctx context.Context, store cadata.Store, left, rig
 			m[ent2.Name] = ent2
 		}
 	}
-	tree := Tree{}
+	tree := []TreeEntry{}
 	for _, ent := range m {
-		tree.Entries = append(tree.Entries, ent)
+		tree = append(tree, ent)
 	}
-	return ag.PostTree(ctx, store, tree)
+	return ag.PostTreeSlice(ctx, store, tree)
 }
 
 func (ag *Agent) concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref) (*Ref, error) {

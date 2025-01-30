@@ -1,6 +1,6 @@
 module github.com/blobcache/glfs
 
-go 1.21
+go 1.23
 
 require (
 	github.com/hashicorp/golang-lru v1.0.2

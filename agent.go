@@ -3,6 +3,7 @@ package glfs
 import (
 	"context"
 	"io"
+	"iter"
 
 	"github.com/blobcache/glfs/bigblob"
 	"go.brendoncarroll.net/state/cadata"
@@ -61,23 +62,22 @@ func GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSize int) ([]b
 	return defaultOp.GetBlobBytes(ctx, s, x, maxSize)
 }
 
-// PostTree writes a tree to CA storage and returns a Ref pointing to it.
-func PostTree(ctx context.Context, store cadata.Poster, t Tree) (*Ref, error) {
-	return defaultOp.PostTree(ctx, store, t)
+func PostTree(ctx context.Context, s cadata.Poster, ents iter.Seq[TreeEntry]) (*Ref, error) {
+	return defaultOp.PostTree(ctx, s, ents)
 }
 
-func PostTreeEntries(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
-	return defaultOp.PostTreeEntries(ctx, s, ents)
+func PostTreeSlice(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
+	return defaultOp.PostTreeSlice(ctx, s, ents)
 }
 
 func PostTreeMap(ctx context.Context, s cadata.Poster, m map[string]Ref) (*Ref, error) {
 	return defaultOp.PostTreeMap(ctx, s, m)
 }
 
-// GetTree retreives the tree in store at Ref if it exists.
+// GetTreeSlice retreives the tree in store at Ref if it exists.
 // If ref.Type != TypeTree ErrRefType is returned.
-func GetTree(ctx context.Context, store cadata.Getter, ref Ref) (*Tree, error) {
-	return defaultOp.GetTree(ctx, store, ref)
+func GetTreeSlice(ctx context.Context, store cadata.Getter, ref Ref, maxEnts int) ([]TreeEntry, error) {
+	return defaultOp.GetTreeSlice(ctx, store, ref, maxEnts)
 }
 
 // GetAtPath returns a ref to the object under ref at subpath.

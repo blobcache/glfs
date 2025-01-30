@@ -19,18 +19,19 @@ func (ag *Agent) FilterPaths(ctx context.Context, s GetPoster, root Ref, f func(
 	if ref != nil {
 		return ref, nil
 	}
-	return ag.PostTree(ctx, s, Tree{})
+	return ag.PostTreeSlice(ctx, s, nil)
 }
 
 func (ag *Agent) filterPaths(ctx context.Context, s GetPoster, root Ref, p string, f func(string) bool) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
-		tree, err := ag.GetTree(ctx, s, root)
+		// TODO: use TreeReader
+		ents, err := ag.GetTreeSlice(ctx, s, root, 1e6)
 		if err != nil {
 			return nil, err
 		}
-		tree2 := Tree{}
-		for _, ent := range tree.Entries {
+		var ents2 []TreeEntry
+		for _, ent := range ents {
 			p2 := path.Join(p, ent.Name)
 			p2 = CleanPath(p2)
 			ref, err := ag.filterPaths(ctx, s, ent.Ref, p2, f)
@@ -42,13 +43,13 @@ func (ag *Agent) filterPaths(ctx context.Context, s GetPoster, root Ref, p strin
 			}
 			ent2 := ent
 			ent2.Ref = *ref
-			tree2.Entries = append(tree2.Entries, ent2)
+			ents2 = append(ents2, ent2)
 		}
-		if len(tree2.Entries) > 0 || len(tree.Entries) == 0 {
-			if _, err := ag.PostTree(ctx, s, tree2); err != nil {
+		if len(ents2) > 0 || len(ents) == 0 {
+			if _, err := ag.PostTreeSlice(ctx, s, ents2); err != nil {
 				panic(err)
 			}
-			return ag.PostTree(ctx, s, tree2)
+			return ag.PostTreeSlice(ctx, s, ents2)
 		}
 		return nil, nil
 	default:

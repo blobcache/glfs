@@ -34,26 +34,27 @@ func (ag *Agent) MapLeaves(ctx context.Context, s GetPoster, root Ref, f RefMapp
 func (ag *Agent) mapLeaves(ctx context.Context, s GetPoster, root Ref, p string, f RefMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
-		tree, err := ag.GetTree(ctx, s, root)
+		// TODO: use TreeReader
+		tree, err := ag.GetTreeSlice(ctx, s, root, 1e6)
 		if err != nil {
 			return nil, err
 		}
-		tree2 := Tree{}
-		for _, ent := range tree.Entries {
+		tree2 := []TreeEntry{}
+		for _, ent := range tree {
 			p2 := path.Join(p, ent.Name)
 			ref, err := ag.mapLeaves(ctx, s, ent.Ref, p2, f)
 			if err != nil {
 				return nil, err
 			}
 			if ref != nil {
-				tree2.Entries = append(tree2.Entries, TreeEntry{
+				tree2 = append(tree2, TreeEntry{
 					Name:     ent.Name,
 					FileMode: ent.FileMode,
 					Ref:      *ref,
 				})
 			}
 		}
-		return ag.PostTree(ctx, s, tree2)
+		return ag.PostTreeSlice(ctx, s, tree2)
 	default:
 		return f(p, root)
 	}

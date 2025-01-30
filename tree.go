@@ -1,88 +1,45 @@
 package glfs
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 
-	"github.com/blobcache/glfs/bigblob"
 	"go.brendoncarroll.net/exp/streams"
 	"go.brendoncarroll.net/state/cadata"
 )
 
-// Tree is a directory of entries to other trees or blobs
-// Each entry in a tree has a unique name.
-type Tree struct {
-	Entries []TreeEntry
-}
-
 // Lookup returns the entry in the tree with name if it exists, or nil if it does not.
-func (t *Tree) Lookup(name string) *TreeEntry {
-	i := sort.Search(len(t.Entries), func(i int) bool {
-		return t.Entries[i].Name >= name
+func Lookup(ents []TreeEntry, name string) *TreeEntry {
+	i := sort.Search(len(ents), func(i int) bool {
+		return ents[i].Name >= name
 	})
-	if i >= 0 && i < len(t.Entries) && t.Entries[i].Name == name {
-		return &t.Entries[i]
+	if i >= 0 && i < len(ents) && ents[i].Name == name {
+		return &ents[i]
 	}
 	return nil
 }
 
-func (t *Tree) MarshalText() ([]byte, error) {
-	sort.SliceStable(t.Entries, t.sorter)
-	if err := t.Validate(); err != nil {
-		return nil, err
-	}
-
-	buf := bytes.Buffer{}
-	for _, ent := range t.Entries {
-		data, err := json.Marshal(ent)
-		if err != nil {
-			return nil, err
-		}
-		buf.Write(data)
-		buf.WriteByte('\n')
-	}
-
-	return buf.Bytes(), nil
+func SortTreeEntries(ents []TreeEntry) {
+	slices.SortFunc(ents, compareTreeEnt)
 }
 
-func (t *Tree) UnmarshalText(x []byte) error {
-	entries := []TreeEntry{}
-	lines := bytes.Split(x, []byte("\n"))
-	for _, line := range lines {
-		if len(line) == 0 {
-			continue
-		}
-		ent := TreeEntry{}
-		if err := json.Unmarshal(line, &ent); err != nil {
-			err = fmt.Errorf("unmarshaling tree: %w", err)
-			return err
-		}
-		entries = append(entries, ent)
-	}
-	t.Entries = entries
-	if err := t.Validate(); err != nil {
-		t.Entries = nil
-		return err
-	}
-	return nil
-}
-
-func (t *Tree) Validate() error {
-	if !sort.SliceIsSorted(t.Entries, t.sorter) {
+func ValidateTreeEntries(ents []TreeEntry) error {
+	if !slices.IsSortedFunc(ents, compareTreeEnt) {
 		return errors.New("tree entries are not sorted")
 	}
-	if err := t.checkDuplicates(); err != nil {
+	if err := checkDuplicates(ents); err != nil {
 		return err
 	}
-	for _, ent := range t.Entries {
+	for _, ent := range ents {
 		if err := ent.Validate(); err != nil {
 			return err
 		}
@@ -91,22 +48,22 @@ func (t *Tree) Validate() error {
 }
 
 // Replace replaces the entry in tree with name == ent.Name with ent.
-func (t *Tree) Replace(ent TreeEntry) {
-	for i := range t.Entries {
-		if t.Entries[i].Name == ent.Name {
-			t.Entries[i] = ent
+func Replace(ents []TreeEntry, ent TreeEntry) {
+	for i := range ents {
+		if ents[i].Name == ent.Name {
+			ents[i] = ent
 		}
 	}
 }
 
-func (t *Tree) sorter(i, j int) bool {
-	return t.Entries[i].Name < t.Entries[j].Name
+func compareTreeEnt(a, b TreeEntry) int {
+	return strings.Compare(a.Name, b.Name)
 }
 
-func (t *Tree) checkDuplicates() error {
-	for i := 0; i < len(t.Entries)-1; i++ {
-		if t.Entries[i].Name == t.Entries[i+1].Name {
-			return fmt.Errorf("duplicate tree entry %v %v", t.Entries[i], t.Entries[i+1])
+func checkDuplicates(ents []TreeEntry) error {
+	for i := 0; i < len(ents)-1; i++ {
+		if ents[i].Name == ents[i+1].Name {
+			return fmt.Errorf("duplicate tree entry %v %v", ents[i], ents[i+1])
 		}
 	}
 	return nil
@@ -145,61 +102,35 @@ func (ag *Agent) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, su
 	if len(parts) < 2 {
 		parts = append(parts, "")
 	}
-
-	t, err := ag.GetTree(ctx, store, ref)
+	t, err := ag.NewTreeReader(store, ref)
 	if err != nil {
 		return nil, err
 	}
-	ent := t.Lookup(parts[0])
-	if ent == nil {
-		return nil, ErrNoEnt{Name: parts[0]}
-	}
-	return ag.GetAtPath(ctx, store, ent.Ref, parts[1])
-}
-
-// PostTree writes a tree to CA storage and returns a Ref pointing to it.
-func (ag *Agent) PostTree(ctx context.Context, store cadata.Poster, t Tree) (*Ref, error) {
-	tw := ag.NewTreeWriter(store)
-	sort.SliceStable(t.Entries, t.sorter)
-	for _, ent := range t.Entries {
-		if err := tw.Put(ctx, ent); err != nil {
-			return nil, err
-		}
-	}
-	return tw.Finish(ctx)
-}
-
-// GetTree retreives the tree in store at Ref if it exists.
-// If ref.Type != TypeTree ErrRefType is returned.
-func (ag *Agent) GetTree(ctx context.Context, store cadata.Getter, ref Ref) (*Tree, error) {
-	tr, err := ag.NewTreeReader(store, ref)
-	if err != nil {
-		return nil, err
-	}
-	var ents []TreeEntry
 	for {
-		var ent TreeEntry
-		if err := tr.Next(ctx, &ent); err != nil {
+		ent, err := streams.Next(ctx, t)
+		if err != nil {
 			if streams.IsEOS(err) {
 				break
 			}
 			return nil, err
 		}
-		ents = append(ents, ent)
+		if ent.Name == parts[0] {
+			return ag.GetAtPath(ctx, store, ent.Ref, parts[1])
+		} else if ent.Name > parts[0] {
+			break
+		}
 	}
-	return &Tree{Entries: ents}, nil
+	return nil, ErrNoEnt{Name: parts[0]}
 }
 
-func readTree(r io.Reader) (*Tree, error) {
-	tree := &Tree{}
-	data, err := io.ReadAll(r)
+// GetTree retreives the tree in store at Ref if it exists.
+// If ref.Type != TypeTree ErrRefType is returned.
+func (ag *Agent) GetTreeSlice(ctx context.Context, store cadata.Getter, ref Ref, maxEnts int) ([]TreeEntry, error) {
+	tr, err := ag.NewTreeReader(store, ref)
 	if err != nil {
 		return nil, err
 	}
-	if err := tree.UnmarshalText(data); err != nil {
-		return nil, err
-	}
-	return tree, nil
+	return streams.Collect(ctx, tr, maxEnts)
 }
 
 // WalkTreeFunc is the type of functions passed to WalkTree
@@ -213,11 +144,12 @@ func (ag *Agent) WalkTree(ctx context.Context, store cadata.Getter, ref Ref, f W
 }
 
 func (ag *Agent) walkTree(ctx context.Context, store cadata.Getter, ref Ref, f WalkTreeFunc, prefix string) error {
-	tree, err := ag.GetTree(ctx, store, ref)
+	// TODO: use TreeReader
+	ents, err := ag.GetTreeSlice(ctx, store, ref, 1e6)
 	if err != nil {
 		return err
 	}
-	for _, ent := range tree.Entries {
+	for _, ent := range ents {
 		if err := f(prefix, ent); err != nil {
 			return err
 		}
@@ -237,11 +169,12 @@ type RefWalker func(ref Ref) error
 // if a tree is encoutered the child refs will be visited first.
 func (ag *Agent) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefWalker) error {
 	if ref.Type == TypeTree {
-		tree, err := ag.GetTree(ctx, s, ref)
+		// TODO: use tree reader
+		ents, err := ag.GetTreeSlice(ctx, s, ref, 1e6)
 		if err != nil {
 			return err
 		}
-		for _, ent := range tree.Entries {
+		for _, ent := range ents {
 			if err := ag.WalkRefs(ctx, s, ent.Ref, fn); err != nil {
 				return err
 			}
@@ -250,17 +183,17 @@ func (ag *Agent) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefW
 	return fn(ref)
 }
 
-func (ag *Agent) PostTreeEntries(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
-	tree := Tree{}
+func (ag *Agent) PostTree(ctx context.Context, s cadata.Poster, ents iter.Seq[TreeEntry]) (*Ref, error) {
+	var rootEnts []TreeEntry
 	subents := map[string][]TreeEntry{}
-	for _, ent := range ents {
+	for ent := range ents {
 		p := CleanPath(ent.Name)
 		if p == "" {
 			return &ent.Ref, nil
 		}
 		parts := strings.SplitN(p, "/", 2)
 		if len(parts) == 1 {
-			tree.Entries = append(tree.Entries, TreeEntry{
+			rootEnts = append(rootEnts, TreeEntry{
 				Name:     parts[0],
 				FileMode: ent.FileMode,
 				Ref:      ent.Ref,
@@ -275,17 +208,34 @@ func (ag *Agent) PostTreeEntries(ctx context.Context, s cadata.Poster, ents []Tr
 	}
 
 	for k, ents2 := range subents {
-		ref, err := ag.PostTreeEntries(ctx, s, ents2)
+		ref, err := ag.PostTreeSlice(ctx, s, ents2)
 		if err != nil {
 			return nil, err
 		}
-		tree.Entries = append(tree.Entries, TreeEntry{
+		rootEnts = append(rootEnts, TreeEntry{
 			Name:     k,
 			FileMode: getFileMode(*ref),
 			Ref:      *ref,
 		})
 	}
-	return ag.PostTree(ctx, s, tree)
+	SortTreeEntries(rootEnts)
+	tw := ag.NewTreeWriter(s)
+	for _, ent := range rootEnts {
+		if err := tw.Put(ctx, ent); err != nil {
+			return nil, err
+		}
+	}
+	return tw.Finish(ctx)
+}
+
+func (ag *Agent) PostTreeSlice(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
+	return ag.PostTree(ctx, s, func(yield func(TreeEntry) bool) {
+		for _, ent := range ents {
+			if !yield(ent) {
+				return
+			}
+		}
+	})
 }
 
 func (ag *Agent) PostTreeMap(ctx context.Context, s cadata.Poster, m map[string]Ref) (*Ref, error) {
@@ -297,7 +247,7 @@ func (ag *Agent) PostTreeMap(ctx context.Context, s cadata.Poster, m map[string]
 			Ref:      v,
 		})
 	}
-	return ag.PostTreeEntries(ctx, s, entries)
+	return ag.PostTreeSlice(ctx, s, entries)
 }
 
 func getFileMode(tr Ref) os.FileMode {
@@ -307,6 +257,7 @@ func getFileMode(tr Ref) os.FileMode {
 	return 0644
 }
 
+// CleanPath removes leading and trailing slashes, and changes "." to ""
 func CleanPath(x string) string {
 	x = path.Clean(x)
 	x = strings.Trim(x, "/")
@@ -316,6 +267,7 @@ func CleanPath(x string) string {
 	return x
 }
 
+// IsValidName returns true if x can be used as a TreeEntry name
 func IsValidName(x string) bool {
 	return x != "" && !strings.Contains(x, "/")
 }
@@ -356,7 +308,7 @@ type TreeReader struct {
 	s   cadata.Getter
 	ref Ref
 
-	r    *bigblob.Reader
+	r    io.Reader
 	dec  *json.Decoder
 	last string
 }
@@ -366,6 +318,10 @@ func (ag *Agent) NewTreeReader(s cadata.Getter, x Ref) (*TreeReader, error) {
 		return nil, ErrRefType{Have: x.Type, Want: TypeTree}
 	}
 	return &TreeReader{ag: ag, s: s, ref: x}, nil
+}
+
+func (ag *Agent) ReadTreeFrom(r io.Reader) *TreeReader {
+	return &TreeReader{ag: ag, r: r}
 }
 
 func (tr *TreeReader) Next(ctx context.Context, dst *TreeEntry) error {

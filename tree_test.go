@@ -12,40 +12,6 @@ import (
 	"go.brendoncarroll.net/state/cadata"
 )
 
-func TestTreeMarshalUnmarshal(t *testing.T) {
-	testCases := []Tree{
-		{
-			Entries: []TreeEntry{
-				{
-					Name:     "test",
-					FileMode: 0644,
-					Ref:      blobRef(),
-				},
-				{
-					Name:     "name with some spaces",
-					FileMode: 0644,
-					Ref:      blobRef(),
-				},
-			},
-		},
-	}
-
-	for i := range testCases {
-		x := testCases[i]
-		data, err := x.MarshalText()
-		if err != nil {
-			assert.Nil(t, err)
-			continue
-		}
-		y := Tree{}
-		if err := y.UnmarshalText(data); err != nil {
-			assert.Nil(t, err)
-			continue
-		}
-		assert.Equal(t, x, y)
-	}
-}
-
 func TestPostTreeFromEntries(t *testing.T) {
 	ctx := context.TODO()
 	s := newStore(t)
@@ -103,12 +69,12 @@ func TestMergeSubtrees(t *testing.T) {
 
 	ref, err := Merge(ctx, s, layers...)
 	require.Nil(t, err)
-	tree, err := GetTree(ctx, s, *ref)
+	tree, err := GetTreeSlice(ctx, s, *ref, 2)
 	require.Nil(t, err)
 
-	if assert.Len(t, tree.Entries, 2) {
-		assertTreeExists(t, s, tree.Entries[0].Ref)
-		assertTreeExists(t, s, tree.Entries[1].Ref)
+	if assert.Len(t, tree, 2) {
+		assertTreeExists(t, s, tree[0].Ref)
+		assertTreeExists(t, s, tree[1].Ref)
 	}
 
 	assertBlobAtPath(t, s, *ref, "dir2/file2.1")
@@ -146,7 +112,7 @@ func mustPostBlob(t testing.TB, s cadata.Poster, data []byte) Ref {
 
 func assertTreeExists(t *testing.T, s cadata.Store, ref Ref) bool {
 	ctx := context.TODO()
-	_, err := GetTree(ctx, s, ref)
+	_, err := GetTreeSlice(ctx, s, ref, 1e6)
 	if err != nil {
 		logRaw(t, s, ref)
 	}
@@ -162,7 +128,7 @@ func assertBlobAtPath(t *testing.T, s cadata.Store, root Ref, p string) bool {
 }
 
 func logTree(ctx context.Context, t *testing.T, s cadata.Store, ref Ref) {
-	tree, err := GetTree(ctx, s, ref)
+	tree, err := GetTreeSlice(ctx, s, ref, 1e6)
 	require.Nil(t, err)
 	t.Log(tree)
 }
