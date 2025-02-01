@@ -319,11 +319,12 @@ func (tw *TreeWriter) Finish(ctx context.Context) (*Ref, error) {
 }
 
 type TreeReader struct {
-	ag  *Agent
+	ag *Agent
+
 	s   cadata.Getter
 	ref Ref
+	r   io.Reader
 
-	r    io.Reader
 	dec  *json.Decoder
 	last string
 }
@@ -336,17 +337,23 @@ func (ag *Agent) NewTreeReader(s cadata.Getter, x Ref) (*TreeReader, error) {
 }
 
 func (ag *Agent) ReadTreeFrom(r io.Reader) *TreeReader {
-	return &TreeReader{ag: ag, r: r}
+	return &TreeReader{
+		ag:  ag,
+		r:   r,
+		dec: json.NewDecoder(r),
+	}
 }
 
 func (tr *TreeReader) Next(ctx context.Context, dst *TreeEntry) error {
 	if tr.dec == nil {
-		r, err := tr.ag.GetTyped(ctx, tr.s, TypeTree, tr.ref)
-		if err != nil {
-			return err
+		if tr.r == nil {
+			r, err := tr.ag.GetTyped(ctx, tr.s, TypeTree, tr.ref)
+			if err != nil {
+				return err
+			}
+			tr.r = r
 		}
-		tr.r = r
-		tr.dec = json.NewDecoder(r)
+		tr.dec = json.NewDecoder(tr.r)
 	}
 
 	if !tr.dec.More() {

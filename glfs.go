@@ -60,7 +60,8 @@ func (ag *Agent) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.R
 // If x.Type != ty, ErrRefType is returned.
 func (ag *Agent) GetTyped(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
 	if ty != "" && x.Type != ty {
-		return nil, ErrRefType{Have: x.Type, Want: TypeBlob}
+		panic(ty)
+		return nil, ErrRefType{Have: x.Type, Want: ty}
 	}
 	return ag.bbag.NewReader(ctx, s, x.Root), nil
 }

@@ -19,14 +19,17 @@ func (ag *Agent) Sync(ctx context.Context, dst cadata.PostExister, src cadata.Ge
 		return ag.bbag.Sync(ctx, dst, src, x.Root, func(r *Reader) error {
 			tr := ag.ReadTreeFrom(r)
 			group, ctx2 := errgroup.WithContext(ctx)
-			if err := streams.ForEach(ctx, tr, func(x TreeEntry) error {
-				ref := x.Ref
+			for {
+				ent, err := streams.Next(ctx, tr)
+				if err != nil {
+					if streams.IsEOS(err) {
+						break
+					}
+					return err
+				}
 				group.Go(func() error {
-					return ag.Sync(ctx2, dst, src, ref)
+					return ag.Sync(ctx2, dst, src, ent.Ref)
 				})
-				return nil
-			}); err != nil {
-				return err
 			}
 			return group.Wait()
 		})
