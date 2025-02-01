@@ -6,7 +6,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/blobcache/glfs/bigblob"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.brendoncarroll.net/state/cadata"
@@ -16,9 +15,9 @@ func TestPostTreeFromEntries(t *testing.T) {
 	ctx := context.TODO()
 	s := newStore(t)
 	m1 := map[string]Ref{
-		"dir1/file1.1": blobRef(),
-		"dir1/file1.2": blobRef(),
-		"dir2/file2.1": blobRef(),
+		"dir1/file1.1": blobRef(t, s),
+		"dir1/file1.2": blobRef(t, s),
+		"dir2/file2.1": blobRef(t, s),
 	}
 	ref, err := PostTreeMap(ctx, s, m1)
 	require.Nil(t, err)
@@ -32,9 +31,9 @@ func TestTreeNoEnt(t *testing.T) {
 	ctx := context.TODO()
 	s := newStore(t)
 	m1 := map[string]Ref{
-		"dir1/file1.1": blobRef(),
-		"dir1/file1.2": blobRef(),
-		"dir2/file2.1": blobRef(),
+		"dir1/file1.1": blobRef(t, s),
+		"dir1/file1.2": blobRef(t, s),
+		"dir2/file2.1": blobRef(t, s),
 	}
 	ref, err := PostTreeMap(ctx, s, m1)
 	require.NoError(t, err)
@@ -48,15 +47,15 @@ func TestMergeSubtrees(t *testing.T) {
 	s := newStore(t)
 	ms := []map[string]Ref{
 		{
-			"dir1/file1.1": blobRef(),
+			"dir1/file1.1": blobRef(t, s),
 		},
 		{
-			"dir1/file1.2": blobRef(),
-			"dir1/file1.3": blobRef(),
+			"dir1/file1.2": blobRef(t, s),
+			"dir1/file1.3": blobRef(t, s),
 		},
 		{
-			"dir1/file1.1": blobRef(),
-			"dir2/file2.1": blobRef(),
+			"dir1/file1.1": blobRef(t, s),
+			"dir2/file2.1": blobRef(t, s),
 		},
 	}
 
@@ -96,7 +95,7 @@ func TestDataNotFound(t *testing.T) {
 	require.Nil(t, ref2)
 }
 
-func mustPostTree(t testing.TB, s cadata.Poster, m map[string]Ref) Ref {
+func mustPostTree(t testing.TB, s cadata.PostExister, m map[string]Ref) Ref {
 	ctx := context.TODO()
 	ref, err := PostTreeMap(ctx, s, m)
 	require.NoError(t, err)
@@ -140,11 +139,8 @@ func logRaw(t *testing.T, s cadata.Store, ref Ref) {
 	t.Log(string(data))
 }
 
-func blobRef() Ref {
-	return Ref{
-		Type: TypeBlob,
-		Root: bigblob.Root{
-			Ref: bigblob.Ref{},
-		},
-	}
+func blobRef(t testing.TB, s cadata.Poster) Ref {
+	ref, err := PostBlob(context.TODO(), s, bytes.NewReader(nil))
+	require.NoError(t, err)
+	return *ref
 }

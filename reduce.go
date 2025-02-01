@@ -12,16 +12,19 @@ import (
 
 // Merge merges the refs in layers with increasing prescedence.
 // layer[i+1] is higher prescendence than layer[i]
+//
 // Merging is associative, but not commutative
 // Merge(tree, blob) -> blob
 // Merge(blob, tree) -> tree
 // Merge(tree1, tree2) -> set of entry names given by tree1 + tree2. value at entry x given by Merge(tree1[x], tree2[x])
 // Although not written as such for performance reasons:
 // Merging(1, 2, 3, 4, 5) == Merge(Merge(Merge(Merge(1, 2), 3), 4), 5)
-func (ag *Agent) Merge(ctx context.Context, dst cadata.Poster, src cadata.Getter, layers ...Ref) (*Ref, error) {
+//
+// Merge will call Sync to protect referential integrity in dst.
+func (ag *Agent) Merge(ctx context.Context, dst cadata.PostExister, src cadata.Getter, layers ...Ref) (*Ref, error) {
 	switch {
 	case len(layers) == 0:
-		panic("merging 0 layers")
+		return nil, fmt.Errorf("merged 0 layers")
 	case len(layers) == 1:
 		return &layers[0], nil
 	case layers[len(layers)-1].Type == TypeBlob:
@@ -64,6 +67,9 @@ func (ag *Agent) Merge(ctx context.Context, dst cadata.Poster, src cadata.Getter
 			Ref:      *ref,
 			FileMode: lastEnt.FileMode,
 		})
+	}
+	if err := ag.syncTreeEntries(ctx, dst, src, tree); err != nil {
+		return nil, err
 	}
 	return ag.PostTreeSlice(ctx, dst, tree)
 }

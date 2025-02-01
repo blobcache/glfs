@@ -89,7 +89,7 @@ func WriteTAR(ctx context.Context, ag *glfs.Agent, s cadata.Getter, root glfs.Re
 }
 
 // ReadTAR creates a GLFS filesystem with contents read from tr
-func ReadTAR(ctx context.Context, ag *glfs.Agent, s cadata.Poster, tr *tar.Reader) (*glfs.Ref, error) {
+func ReadTAR(ctx context.Context, ag *glfs.Agent, s cadata.PostExister, tr *tar.Reader) (*glfs.Ref, error) {
 	ents := []glfs.TreeEntry{}
 	emptyDirs := map[string]glfs.TreeEntry{}
 	for {

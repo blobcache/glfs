@@ -70,6 +70,11 @@ type TypedWriter struct {
 	bw *bigblob.Writer
 }
 
+// NewTypedWriter returns a new writer for ty.
+func (ag *Agent) NewTypedWriter(s cadata.Poster, ty Type) *TypedWriter {
+	return &TypedWriter{ty: ty, bw: ag.bbag.NewWriter(s, ag.makeSalt(ty))}
+}
+
 func (tw *TypedWriter) SetWriteContext(ctx context.Context) {
 	tw.bw.SetWriteContext(ctx)
 }
@@ -86,17 +91,10 @@ func (tw *TypedWriter) Finish(ctx context.Context) (*Ref, error) {
 	return &Ref{Root: *root, Type: tw.ty}, nil
 }
 
-// NewTypedWriter returns a new writer for ty.
-func (ag *Agent) NewTypedWriter(s cadata.Poster, ty Type) *TypedWriter {
-	return &TypedWriter{ty: ty, bw: ag.bbag.NewWriter(s, ag.makeSalt(ty))}
-}
-
 // SizeOf returns the size of the data at x
 func SizeOf(x Ref) uint64 {
 	return x.Size
 }
-
-type GetPoster = cadata.GetPoster
 
 type PostLister interface {
 	cadata.Poster

@@ -2,6 +2,8 @@ package glfs
 
 import (
 	"context"
+
+	"go.brendoncarroll.net/state/cadata"
 )
 
 // Diff contains the result of a Compare
@@ -16,7 +18,7 @@ type Diff struct {
 
 // Compare compares left and right and returns a diff.
 // Left and right must both point only to data in s.
-func (ag *Agent) Compare(ctx context.Context, s GetPoster, left, right Ref) (*Diff, error) {
+func (ag *Agent) Compare(ctx context.Context, dst cadata.PostExister, src cadata.Getter, left, right Ref) (*Diff, error) {
 	if left.Type != right.Type {
 		return &Diff{
 			Left:  &left,
@@ -26,15 +28,15 @@ func (ag *Agent) Compare(ctx context.Context, s GetPoster, left, right Ref) (*Di
 	switch left.Type {
 	case TypeTree:
 		// TODO: use TreeReader
-		lTree, err := ag.GetTreeSlice(ctx, s, left, 1e6)
+		lTree, err := ag.GetTreeSlice(ctx, src, left, 1e6)
 		if err != nil {
 			return nil, err
 		}
-		rTree, err := ag.GetTreeSlice(ctx, s, right, 1e6)
+		rTree, err := ag.GetTreeSlice(ctx, src, right, 1e6)
 		if err != nil {
 			return nil, err
 		}
-		return ag.compareTrees(ctx, s, lTree, rTree)
+		return ag.compareTrees(ctx, dst, src, lTree, rTree)
 	default:
 		if left.Equals(right) {
 			return &Diff{Both: &left}, nil
@@ -47,12 +49,12 @@ func (ag *Agent) Compare(ctx context.Context, s GetPoster, left, right Ref) (*Di
 	}
 }
 
-func (ag *Agent) compareTrees(ctx context.Context, s GetPoster, lTree, rTree []TreeEntry) (*Diff, error) {
+func (ag *Agent) compareTrees(ctx context.Context, dst cadata.PostExister, src cadata.Getter, lTree, rTree []TreeEntry) (*Diff, error) {
 	onlyLeft := onlyInFirst(lTree, rTree)
 	onlyRight := onlyInFirst(rTree, lTree)
 	var both []TreeEntry
 	if err := forEachInBoth(rTree, lTree, func(lEnt, rEnt TreeEntry) error {
-		diff, err := ag.Compare(ctx, s, lEnt.Ref, rEnt.Ref)
+		diff, err := ag.Compare(ctx, dst, src, lEnt.Ref, rEnt.Ref)
 		if err != nil {
 			return err
 		}
@@ -84,17 +86,17 @@ func (ag *Agent) compareTrees(ctx context.Context, s GetPoster, lTree, rTree []T
 	var err error
 	var diff Diff
 	if len(onlyLeft) > 0 {
-		if diff.Left, err = ag.PostTreeSlice(ctx, s, onlyLeft); err != nil {
+		if diff.Left, err = ag.PostTreeSlice(ctx, dst, onlyLeft); err != nil {
 			return nil, err
 		}
 	}
 	if len(onlyRight) > 0 {
-		if diff.Right, err = ag.PostTreeSlice(ctx, s, onlyRight); err != nil {
+		if diff.Right, err = ag.PostTreeSlice(ctx, dst, onlyRight); err != nil {
 			return nil, err
 		}
 	}
 	if len(both) > 0 {
-		if diff.Both, err = ag.PostTreeSlice(ctx, s, both); err != nil {
+		if diff.Both, err = ag.PostTreeSlice(ctx, dst, both); err != nil {
 			return nil, err
 		}
 	}

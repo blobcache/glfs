@@ -16,7 +16,6 @@ func (ag *Agent) PostBlob(ctx context.Context, s cadata.Poster, r io.Reader) (*R
 	return ag.PostTyped(ctx, s, TypeBlob, r)
 }
 
-// GetBlob returns an io.ReadSeeker for accessing data from the blob at x
 func (ag *Agent) GetBlob(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
 	return ag.GetTyped(ctx, s, TypeBlob, x)
 }

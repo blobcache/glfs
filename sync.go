@@ -11,7 +11,7 @@ import (
 
 // Sync ensures that all data referenced by x exists in dst, copying from src if necessary.
 // Sync assumes there are no dangling references, and skips copying data when its existence is implied.
-func (ag *Agent) Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, x Ref) error {
+func (ag *Agent) Sync(ctx context.Context, dst cadata.PostExister, src cadata.Getter, x Ref) error {
 	switch x.Type {
 	case TypeBlob:
 		return ag.bbag.Sync(ctx, dst, src, x.Root, func(r *Reader) error { return nil })
@@ -33,4 +33,15 @@ func (ag *Agent) Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, 
 	default:
 		return fmt.Errorf("can't sync unrecognized type %s", x.Type)
 	}
+}
+
+// syncTreeEntries is a convenience function for syncing tree entries.
+// Most callers should prefer Sync
+func (ag *Agent) syncTreeEntries(ctx context.Context, dst cadata.PostExister, src cadata.Getter, ents []TreeEntry) error {
+	for _, ent := range ents {
+		if err := ag.Sync(ctx, dst, src, ent.Ref); err != nil {
+			return err
+		}
+	}
+	return nil
 }

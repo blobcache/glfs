@@ -6,27 +6,28 @@ import (
 	"math"
 	"path"
 
+	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/errgroup"
 )
 
 // FilterPaths returns a version of root with paths filtered using f as a predicate.
 // If f returns true for a path it will be included in the output, otherwise it will not.
-func (ag *Agent) FilterPaths(ctx context.Context, s GetPoster, root Ref, f func(string) bool) (*Ref, error) {
-	ref, err := ag.filterPaths(ctx, s, root, "", f)
+func (ag *Agent) FilterPaths(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f func(string) bool) (*Ref, error) {
+	ref, err := ag.filterPaths(ctx, dst, src, root, "", f)
 	if err != nil {
 		return nil, err
 	}
-	if ref != nil {
-		return ref, nil
+	if ref == nil {
+		return ag.PostTreeSlice(ctx, dst, nil)
 	}
-	return ag.PostTreeSlice(ctx, s, nil)
+	return ref, nil
 }
 
-func (ag *Agent) filterPaths(ctx context.Context, s GetPoster, root Ref, p string, f func(string) bool) (*Ref, error) {
+func (ag *Agent) filterPaths(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f func(string) bool) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
 		// TODO: use TreeReader
-		ents, err := ag.GetTreeSlice(ctx, s, root, 1e6)
+		ents, err := ag.GetTreeSlice(ctx, src, root, 1e6)
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +35,7 @@ func (ag *Agent) filterPaths(ctx context.Context, s GetPoster, root Ref, p strin
 		for _, ent := range ents {
 			p2 := path.Join(p, ent.Name)
 			p2 = CleanPath(p2)
-			ref, err := ag.filterPaths(ctx, s, ent.Ref, p2, f)
+			ref, err := ag.filterPaths(ctx, dst, src, ent.Ref, p2, f)
 			if err != nil {
 				return nil, err
 			}
@@ -46,10 +47,10 @@ func (ag *Agent) filterPaths(ctx context.Context, s GetPoster, root Ref, p strin
 			ents2 = append(ents2, ent2)
 		}
 		if len(ents2) > 0 || len(ents) == 0 {
-			if _, err := ag.PostTreeSlice(ctx, s, ents2); err != nil {
-				panic(err)
+			if err := ag.syncTreeEntries(ctx, dst, src, ents2); err != nil {
+				return nil, err
 			}
-			return ag.PostTreeSlice(ctx, s, ents2)
+			return ag.PostTreeSlice(ctx, dst, ents2)
 		}
 		return nil, nil
 	default:
@@ -60,7 +61,7 @@ func (ag *Agent) filterPaths(ctx context.Context, s GetPoster, root Ref, p strin
 	}
 }
 
-func (ag *Agent) ShardLeaves(ctx context.Context, s GetPoster, root Ref, n int) ([]Ref, error) {
+func (ag *Agent) ShardLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, n int) ([]Ref, error) {
 	hashFunc := func(p string) uint32 {
 		h := fnv.New32()
 		h.Write([]byte(p))
@@ -71,7 +72,7 @@ func (ag *Agent) ShardLeaves(ctx context.Context, s GetPoster, root Ref, n int) 
 	for i := 0; i < n; i++ {
 		i := i
 		eg.Go(func() error {
-			shard, err := ag.FilterPaths(ctx2, s, root, func(p string) bool {
+			shard, err := ag.FilterPaths(ctx2, dst, src, root, func(p string) bool {
 				x := hashFunc(p)
 				return int(x)/(math.MaxUint32/n) == i
 			})

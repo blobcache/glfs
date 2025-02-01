@@ -6,17 +6,19 @@ import (
 	"strings"
 
 	"errors"
+
+	"go.brendoncarroll.net/state/cadata"
 )
 
 type TreeEntryMapper func(ent TreeEntry) (*TreeEntry, error)
 
-func (ag *Agent) MapEntries(ctx context.Context, s GetPoster, root Ref, f TreeEntryMapper) (*Ref, error) {
+func (ag *Agent) MapEntries(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f TreeEntryMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeBlob:
 		return &root, nil
 	case TypeTree:
 		// TODO: use TreeReader
-		tree, err := ag.GetTreeSlice(ctx, s, root, 1e6)
+		tree, err := ag.GetTreeSlice(ctx, src, root, 1e6)
 		if err != nil {
 			return nil, err
 		}
@@ -28,13 +30,13 @@ func (ag *Agent) MapEntries(ctx context.Context, s GetPoster, root Ref, f TreeEn
 			}
 			tree2[i] = *ent2
 		}
-		return ag.PostTreeSlice(ctx, s, tree2)
+		return ag.PostTreeSlice(ctx, dst, tree2)
 	default:
 		panic(root.Type)
 	}
 }
 
-func (ag *Agent) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
+func (ag *Agent) MapEntryAt(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
 	if p == "" {
 		return nil, errors.New("MapEntryAt cannot operate on empty path")
 	}
@@ -42,7 +44,7 @@ func (ag *Agent) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string
 	switch root.Type {
 	case TypeTree:
 		// TODO: use TreeReader
-		tree, err := ag.GetTreeSlice(ctx, s, root, 1e6)
+		tree, err := ag.GetTreeSlice(ctx, src, root, 1e6)
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +61,7 @@ func (ag *Agent) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string
 			}
 			Replace(tree, *ent2)
 		} else {
-			ref2, err := ag.MapEntryAt(ctx, s, ent.Ref, parts[1], f)
+			ref2, err := ag.MapEntryAt(ctx, dst, src, ent.Ref, parts[1], f)
 			if err != nil {
 				return nil, err
 			}
@@ -67,7 +69,7 @@ func (ag *Agent) MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string
 			ent2.Ref = *ref2
 			Replace(tree, ent2)
 		}
-		return ag.PostTreeSlice(ctx, s, tree)
+		return ag.PostTreeSlice(ctx, dst, tree)
 	default:
 		return nil, fmt.Errorf("MapEntry cannot traverse object type: %s", root.Type)
 	}

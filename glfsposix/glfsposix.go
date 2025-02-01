@@ -15,7 +15,7 @@ import (
 )
 
 // Import goes from a POSIX filesystem to GLFS
-func Import(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cadata.Poster, fsx posixfs.FS, p string) (*glfs.Ref, error) {
+func Import(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cadata.PostExister, fsx posixfs.FS, p string) (*glfs.Ref, error) {
 	return glfsImport(ctx, glfsImportParams{
 		ag:  ag,
 		sem: sem,
@@ -29,7 +29,7 @@ func Import(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cada
 type glfsImportParams struct {
 	ag  *glfs.Agent
 	sem *semaphore.Weighted
-	s   cadata.Poster
+	s   cadata.PostExister
 
 	fs     posixfs.FS
 	target string

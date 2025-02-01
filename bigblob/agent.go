@@ -3,8 +3,8 @@ package bigblob
 import (
 	"sync"
 
-	"go.brendoncarroll.net/state/cadata"
 	lru "github.com/hashicorp/golang-lru"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 type Option func(*Agent)
@@ -17,7 +17,7 @@ func WithCacheSize(n int) Option {
 
 // WithBlockSize sets the block size used when writing files.
 // If n < 0 then WithBlockSize panics
-// If n == 0 then the stores MaxBlobSize will be used as a default.
+// If n == 0 then the store's MaxBlobSize will be used as a default.
 func WithBlockSize(n int) Option {
 	if n < 0 {
 		panic(n)

@@ -62,15 +62,15 @@ func GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSize int) ([]b
 	return defaultOp.GetBlobBytes(ctx, s, x, maxSize)
 }
 
-func PostTree(ctx context.Context, s cadata.Poster, ents iter.Seq[TreeEntry]) (*Ref, error) {
+func PostTree(ctx context.Context, s cadata.PostExister, ents iter.Seq[TreeEntry]) (*Ref, error) {
 	return defaultOp.PostTree(ctx, s, ents)
 }
 
-func PostTreeSlice(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
+func PostTreeSlice(ctx context.Context, s cadata.PostExister, ents []TreeEntry) (*Ref, error) {
 	return defaultOp.PostTreeSlice(ctx, s, ents)
 }
 
-func PostTreeMap(ctx context.Context, s cadata.Poster, m map[string]Ref) (*Ref, error) {
+func PostTreeMap(ctx context.Context, s cadata.PostExister, m map[string]Ref) (*Ref, error) {
 	return defaultOp.PostTreeMap(ctx, s, m)
 }
 
@@ -101,38 +101,38 @@ func WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefWalker) error
 
 // Sync ensures that all data referenced by x exists in dst, copying from src if necessary.
 // Sync assumes there are no dangling references, and skips copying data when its existence is implied.
-func Sync(ctx context.Context, dst cadata.Store, src cadata.Getter, x Ref) error {
+func Sync(ctx context.Context, dst cadata.PostExister, src cadata.Getter, x Ref) error {
 	return defaultOp.Sync(ctx, dst, src, x)
 }
 
 // FilterPaths returns a version of root with paths filtered using f as a predicate.
 // If f returns true for a path it will be included in the output, otherwise it will not.
-func FilterPaths(ctx context.Context, s GetPoster, root Ref, f func(string) bool) (*Ref, error) {
-	return defaultOp.FilterPaths(ctx, s, root, f)
+func FilterPaths(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f func(string) bool) (*Ref, error) {
+	return defaultOp.FilterPaths(ctx, dst, src, root, f)
 }
 
 // ShardLeaves calls ShardLeaves on the default Agent
-func ShardLeaves(ctx context.Context, s GetPoster, root Ref, n int) ([]Ref, error) {
-	return defaultOp.ShardLeaves(ctx, s, root, n)
+func ShardLeaves(ctx context.Context, dst cadata.PostExister, s cadata.Getter, root Ref, n int) ([]Ref, error) {
+	return defaultOp.ShardLeaves(ctx, dst, s, root, n)
 }
 
 // MapBlobs calls MapBlobs on the default Agent
-func MapBlobs(ctx context.Context, s GetPoster, root Ref, f BlobMapper) (*Ref, error) {
-	return defaultOp.MapBlobs(ctx, s, root, f)
+func MapBlobs(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f BlobMapper) (*Ref, error) {
+	return defaultOp.MapBlobs(ctx, dst, src, root, f)
 }
 
 // MapLeaves calls MapLeaves on the default Agent
-func MapLeaves(ctx context.Context, s GetPoster, root Ref, f RefMapper) (*Ref, error) {
-	return defaultOp.MapLeaves(ctx, s, root, f)
+func MapLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f RefMapper) (*Ref, error) {
+	return defaultOp.MapLeaves(ctx, dst, src, root, f)
 }
 
 // MapEntryAt calls MapEntryAt on the default Agent
-func MapEntryAt(ctx context.Context, s GetPoster, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
-	return defaultOp.MapEntryAt(ctx, s, root, p, f)
+func MapEntryAt(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
+	return defaultOp.MapEntryAt(ctx, dst, src, root, p, f)
 }
 
 // Merge calls Merge on the default Agent
-func Merge(ctx context.Context, dst cadata.Poster, src cadata.Getter, layers ...Ref) (*Ref, error) {
+func Merge(ctx context.Context, dst cadata.PostExister, src cadata.Getter, layers ...Ref) (*Ref, error) {
 	return defaultOp.Merge(ctx, dst, src, layers...)
 }
 

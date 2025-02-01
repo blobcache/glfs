@@ -14,17 +14,17 @@ func TestShardLeaves(t *testing.T) {
 	s := newStore(t)
 	testCases := []map[string]Ref{
 		{
-			"dir1/file1.1": blobRef(),
-			"dir2/file2.1": blobRef(),
+			"dir1/file1.1": blobRef(t, s),
+			"dir2/file2.1": blobRef(t, s),
 		},
-		generateTree(100),
+		generateTree(t, s, 100),
 	}
 
 	for _, tc := range testCases {
 		x, err := PostTreeMap(ctx, s, tc)
 		require.Nil(t, err)
 		logTree(ctx, t, s, *x)
-		shards, err := ShardLeaves(ctx, s, *x, 4)
+		shards, err := ShardLeaves(ctx, s, s, *x, 4)
 		require.Nil(t, err)
 		t.Log(shards)
 		y, err := Merge(ctx, s, s, shards...)
@@ -34,11 +34,11 @@ func TestShardLeaves(t *testing.T) {
 	}
 }
 
-func generateTree(n int) map[string]Ref {
+func generateTree(t testing.TB, s cadata.Store, n int) map[string]Ref {
 	m := map[string]Ref{}
 	for i := 0; i < n; i++ {
 		p := strconv.Itoa(i/10) + "/" + strconv.Itoa(i)
-		m[p] = blobRef()
+		m[p] = blobRef(t, s)
 	}
 	return m
 }

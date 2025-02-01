@@ -183,7 +183,7 @@ func (ag *Agent) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefW
 	return fn(ref)
 }
 
-func (ag *Agent) PostTree(ctx context.Context, s cadata.Poster, ents iter.Seq[TreeEntry]) (*Ref, error) {
+func (ag *Agent) PostTree(ctx context.Context, s cadata.PostExister, ents iter.Seq[TreeEntry]) (*Ref, error) {
 	var rootEnts []TreeEntry
 	subents := map[string][]TreeEntry{}
 	for ent := range ents {
@@ -228,8 +228,8 @@ func (ag *Agent) PostTree(ctx context.Context, s cadata.Poster, ents iter.Seq[Tr
 	return tw.Finish(ctx)
 }
 
-func (ag *Agent) PostTreeSlice(ctx context.Context, s cadata.Poster, ents []TreeEntry) (*Ref, error) {
-	return ag.PostTree(ctx, s, func(yield func(TreeEntry) bool) {
+func (ag *Agent) PostTreeSlice(ctx context.Context, dst cadata.PostExister, ents []TreeEntry) (*Ref, error) {
+	return ag.PostTree(ctx, dst, func(yield func(TreeEntry) bool) {
 		for _, ent := range ents {
 			if !yield(ent) {
 				return
@@ -238,7 +238,7 @@ func (ag *Agent) PostTreeSlice(ctx context.Context, s cadata.Poster, ents []Tree
 	})
 }
 
-func (ag *Agent) PostTreeMap(ctx context.Context, s cadata.Poster, m map[string]Ref) (*Ref, error) {
+func (ag *Agent) PostTreeMap(ctx context.Context, s cadata.PostExister, m map[string]Ref) (*Ref, error) {
 	entries := []TreeEntry{}
 	for k, v := range m {
 		entries = append(entries, TreeEntry{
@@ -273,14 +273,16 @@ func IsValidName(x string) bool {
 }
 
 type TreeWriter struct {
+	dst      cadata.PostExister
 	tw       *TypedWriter
 	enc      *json.Encoder
 	lastName string
 }
 
-func (ag *Agent) NewTreeWriter(s cadata.Poster) *TreeWriter {
+func (ag *Agent) NewTreeWriter(s cadata.PostExister) *TreeWriter {
 	tw := ag.NewTypedWriter(s, TypeTree)
 	return &TreeWriter{
+		dst: s,
 		tw:  tw,
 		enc: json.NewEncoder(tw),
 	}
@@ -289,6 +291,11 @@ func (ag *Agent) NewTreeWriter(s cadata.Poster) *TreeWriter {
 func (tw *TreeWriter) Put(ctx context.Context, te TreeEntry) error {
 	if te.Name <= tw.lastName {
 		return fmt.Errorf("cannot write tree entries out of order %q <= %q", te.Name, tw.lastName)
+	}
+	if yes, err := tw.dst.Exists(ctx, te.Ref.CID); err != nil {
+		return err
+	} else if !yes {
+		return fmt.Errorf("adding tree ent %v would violate referential integrity", te)
 	}
 	tw.tw.SetWriteContext(ctx)
 	defer tw.tw.SetWriteContext(nil)
