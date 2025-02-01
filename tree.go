@@ -90,11 +90,19 @@ func (te *TreeEntry) Validate() error {
 // GetAtPath returns a ref to the object under ref at subpath.
 // ErrNoEnt is returned if there is no entry at that path.
 func (ag *Agent) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, subpath string) (*Ref, error) {
+	ent, err := ag.Lookup(ctx, store, TreeEntry{Name: "", Ref: ref}, subpath)
+	if err != nil {
+		return nil, err
+	}
+	return &ent.Ref, nil
+}
+
+func (ag *Agent) Lookup(ctx context.Context, store cadata.Getter, ent TreeEntry, subpath string) (*TreeEntry, error) {
 	subpath = strings.Trim(subpath, "/")
 	if subpath == "" {
-		return &ref, nil
+		return &ent, nil
 	}
-	if ref.Type != TypeTree {
+	if ent.Ref.Type != TypeTree {
 		return nil, errors.New("can only take subpath of type tree")
 	}
 
@@ -102,7 +110,7 @@ func (ag *Agent) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, su
 	if len(parts) < 2 {
 		parts = append(parts, "")
 	}
-	t, err := ag.NewTreeReader(store, ref)
+	t, err := ag.NewTreeReader(store, ent.Ref)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +123,7 @@ func (ag *Agent) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, su
 			return nil, err
 		}
 		if ent.Name == parts[0] {
-			return ag.GetAtPath(ctx, store, ent.Ref, parts[1])
+			return ag.Lookup(ctx, store, ent, parts[1])
 		} else if ent.Name > parts[0] {
 			break
 		}

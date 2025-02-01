@@ -16,8 +16,9 @@ func (ag *Agent) PostBlob(ctx context.Context, s cadata.Poster, r io.Reader) (*R
 	return ag.PostTyped(ctx, s, TypeBlob, r)
 }
 
+// GetBlob returns an io.ReadSeeker for accessing data from the blob at x
 func (ag *Agent) GetBlob(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
-	return ag.GetTyped(ctx, s, TypeBlob, x)
+	return ag.NewBlobReader(ctx, s, x)
 }
 
 // GetBlobBytes reads the entire contents of the blob at x into memory and returns the slice of bytes.
@@ -27,6 +28,10 @@ func (ag *Agent) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSi
 		return nil, err
 	}
 	return readAtMost(r, maxSize)
+}
+
+func (ag *Agent) NewBlobReader(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
+	return ag.GetTyped(ctx, s, TypeBlob, x)
 }
 
 func (ag *Agent) NewBlobWriter(s cadata.Poster) *TypedWriter {

@@ -46,7 +46,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	case io.SeekCurrent:
 		r.offset += offset
 	case io.SeekEnd:
-		r.offset = int64(r.root.Size) - offset
+		r.offset = int64(r.root.Size) + offset
 	default:
 		panic("invalid whence")
 	}
