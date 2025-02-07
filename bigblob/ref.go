@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,20 +20,32 @@ var encoding = base64.NewEncoding(cadata.Base64Alphabet)
 
 const DEKSize = 32
 
+// DEK is a Data Encryption Key
 type DEK [DEKSize]byte
 
+func (dek DEK) String() string {
+	h := blake3.Sum256(dek[:])
+	return fmt.Sprintf("{DEK %x}", h[:4])
+}
+
 func (dek DEK) MarshalJSON() (ret []byte, _ error) {
-	return json.Marshal(encoding.EncodeToString(dek[:]))
+	ret = append(ret, '"')
+	ret = hex.AppendEncode(ret, dek[:])
+	ret = append(ret, '"')
+	return ret, nil
 }
 
 func (dek *DEK) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
+	var hexStr string
+	if err := json.Unmarshal(data, &hexStr); err != nil {
 		return err
 	}
-	data, err := encoding.DecodeString(s)
+	data, err := hex.DecodeString(hexStr)
 	if err != nil {
 		return err
+	}
+	if len(data) != len(dek) {
+		return fmt.Errorf("DEK.UnmarshalJSON: data is wrong length %d", len(data))
 	}
 	copy(dek[:], data)
 	return nil
