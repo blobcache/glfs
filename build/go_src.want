@@ -1,0 +1,15 @@
+local want = import "@want";
+local golang = import "@recipes/golang/golang.libsonnet";
+
+local goFiles = want.select(GROUND, want.union([
+	want.unit("go.mod"),
+	want.unit("go.sum"),
+	want.suffix(".go"),
+]));
+
+local nonGoFiles = want.select(DERIVED, want.union([
+	want.prefix("glfstar/testdata"),
+	want.prefix("glfszip/testdata"),
+]));
+
+want.merge([goFiles, nonGoFiles])

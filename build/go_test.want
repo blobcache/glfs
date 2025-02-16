@@ -1,0 +1,6 @@
+local want = import "@want";
+local golang = import "@recipes/golang/golang.libsonnet";
+
+local modSrc = want.selectDir(DERIVED, "./go_src.want");
+
+golang.goTest(modSrc)

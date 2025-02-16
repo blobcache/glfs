@@ -2,10 +2,8 @@ package glfstar
 
 import (
 	"archive/tar"
-	"compress/gzip"
 	"context"
 	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -19,8 +17,7 @@ import (
 )
 
 var corpus = []string{
-	//"https://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04-base-amd64.tar.gz",
-	"https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/alpine-minirootfs-3.21.0-x86_64.tar.gz",
+	"alpine-minirootfs.tar",
 }
 
 func TestReadTAR(t *testing.T) {
@@ -81,43 +78,12 @@ func TestWriteRead(t *testing.T) {
 	})
 }
 
-func withTARStream(t *testing.T, u string, fn func(r *tar.Reader)) {
-	f, err := ensureData(u)
+func withTARStream(t *testing.T, p string, fn func(r *tar.Reader)) {
+	f, err := os.Open(filepath.Join("testdata", p))
 	require.NoError(t, err)
 	defer f.Close()
-	r, err := gzip.NewReader(f)
-	require.NoError(t, err)
-	defer r.Close()
-	tr := tar.NewReader(r)
+	tr := tar.NewReader(f)
 	fn(tr)
-}
-
-func ensureData(u string) (*os.File, error) {
-	if err := os.MkdirAll("./testdata", 0755); err != nil {
-		return nil, err
-	}
-	p := filepath.Join("testdata", path.Base(u))
-	f, err := os.Open(p)
-	if !os.IsNotExist(err) {
-		return f, err
-	}
-	f, err = os.Create(p)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	res, err := http.Get(u)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if _, err = io.Copy(f, res.Body); err != nil {
-		return nil, err
-	}
-	if err = f.Close(); err != nil {
-		return nil, err
-	}
-	return os.Open(p)
 }
 
 func newStore(t testing.TB) cadata.Store {

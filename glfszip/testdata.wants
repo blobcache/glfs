@@ -1,0 +1,9 @@
+local want = import "@want";
+
+[
+    want.put(want.unit("./testdata/protoc.zip"), want.importURL(
+        url="https://github.com/protocolbuffers/protobuf/releases/download/v22.0-rc1/protoc-22.0-rc-1-osx-x86_64.zip",
+        algo="BLAKE3-256",
+        hash="243a6b725637730fe2b53749f55c213467d31b5d382ca961b0074b46d55309ce",
+    )),
+]

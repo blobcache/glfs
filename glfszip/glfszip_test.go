@@ -3,20 +3,18 @@ package glfszip
 import (
 	"archive/zip"
 	"context"
-	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
 
 	"github.com/blobcache/glfs"
-	"go.brendoncarroll.net/state/cadata"
 	"github.com/stretchr/testify/require"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 var corpus = []string{
-	"https://github.com/protocolbuffers/protobuf/releases/download/v22.0-rc1/protoc-22.0-rc-1-osx-x86_64.zip",
+	"protoc.zip",
 }
 
 func TestImport(t *testing.T) {
@@ -44,7 +42,7 @@ func TestImport(t *testing.T) {
 }
 
 func newZipReader(t testing.TB, u string) *zip.Reader {
-	f, err := ensureData(u)
+	f, err := os.Open(filepath.Join("testdata", u))
 	require.NoError(t, err)
 	t.Cleanup(func() { f.Close() })
 	finfo, err := f.Stat()
@@ -54,34 +52,6 @@ func newZipReader(t testing.TB, u string) *zip.Reader {
 	require.NoError(t, err)
 
 	return zr
-}
-
-func ensureData(u string) (*os.File, error) {
-	if err := os.MkdirAll("./testdata", 0755); err != nil {
-		return nil, err
-	}
-	p := filepath.Join("testdata", path.Base(u))
-	f, err := os.Open(p)
-	if !os.IsNotExist(err) {
-		return f, err
-	}
-	f, err = os.Create(p)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	res, err := http.Get(u)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	if _, err = io.Copy(f, res.Body); err != nil {
-		return nil, err
-	}
-	if err = f.Close(); err != nil {
-		return nil, err
-	}
-	return os.Open(p)
 }
 
 func newStore(t testing.TB) cadata.Store {

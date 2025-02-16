@@ -1,0 +1,16 @@
+local want = import "@want";
+
+{
+	ignore: want.union([
+		want.dirPath(".git"),
+		want.prefix("glfstar/testdata/"),
+		want.prefix("glfszip/testdata/"),
+	]),
+	namespace: {
+		want: want.blob(importstr "@want"),
+		recipes: want.pick(
+			want.importGit("https://git.brendoncarroll.net/want/want", "a8b8c002a4b2cbd85685cb8b36e76cbdee572e29"),
+			"recipes",
+		),
+	}
+}
