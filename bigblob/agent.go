@@ -3,7 +3,7 @@ package bigblob
 import (
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.brendoncarroll.net/state/cadata"
 )
 
@@ -31,7 +31,7 @@ type Agent struct {
 	cacheSize int
 	blockSize int
 
-	cache   *lru.Cache
+	cache   *lru.Cache[cadata.ID, []byte]
 	bufPool sync.Pool
 }
 
@@ -64,8 +64,8 @@ func (ag *Agent) releaseBuffer(x *[]byte) {
 	ag.bufPool.Put(x)
 }
 
-func newCache(size int) *lru.Cache {
-	cache, err := lru.New(size)
+func newCache(size int) *lru.Cache[cadata.ID, []byte] {
+	cache, err := lru.New[cadata.ID, []byte](size)
 	if err != nil {
 		panic(err)
 	}

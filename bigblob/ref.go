@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -15,8 +14,6 @@ import (
 	"golang.org/x/crypto/chacha20"
 	"lukechampine.com/blake3"
 )
-
-var encoding = base64.NewEncoding(cadata.Base64Alphabet)
 
 const DEKSize = 32
 
@@ -115,7 +112,7 @@ func (ag *Agent) post(ctx context.Context, s cadata.Poster, salt *[32]byte, ptex
 
 func (ag *Agent) getF(ctx context.Context, s cadata.Getter, ref Ref, fn func([]byte) error) error {
 	if value, ok := ag.cache.Get(ref.Key()); ok {
-		return fn(value.([]byte))
+		return fn(value)
 	}
 	buf := make([]byte, s.MaxSize())
 	n, err := s.Get(ctx, ref.CID, buf)

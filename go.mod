@@ -3,7 +3,7 @@ module github.com/blobcache/glfs
 go 1.23
 
 require (
-	github.com/hashicorp/golang-lru v1.0.2
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.8.4
 	go.brendoncarroll.net/exp v0.0.0-20241118183830-280772e567eb
 	go.brendoncarroll.net/state v0.0.0-20241118200920-627c9c196901
