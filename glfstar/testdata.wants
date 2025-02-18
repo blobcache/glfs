@@ -1,7 +1,7 @@
 local want = import "@want";
 
 [
-    want.put(want.unit("./testdata/alpine-minirootfs.tar"), want.importURL(
+    want.putFile("./testdata/alpine-minirootfs.tar", want.importURL(
         url="https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/alpine-minirootfs-3.21.0-x86_64.tar.gz",
         algo="BLAKE3-256",
         hash="9962ac7ed1f51f2a28f9a6496e76e00ccd1b54ea8dc7cb5852847cc4534a6437",
