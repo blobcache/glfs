@@ -3,7 +3,7 @@ package glfs
 import (
 	"context"
 
-	"github.com/blobcache/glfs/bigblob"
+	"blobcache.io/glfs/bigblob"
 	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"

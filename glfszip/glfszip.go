@@ -5,7 +5,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/blobcache/glfs"
+	"blobcache.io/glfs"
 	"go.brendoncarroll.net/state/cadata"
 )
 

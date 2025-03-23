@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/blobcache/glfs/bigblob"
+	"blobcache.io/glfs/bigblob"
 	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/semaphore"
 )

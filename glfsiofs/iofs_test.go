@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/blobcache/glfs"
+	"blobcache.io/glfs"
 	"github.com/stretchr/testify/require"
 	"go.brendoncarroll.net/state/cadata"
 )

@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/blobcache/glfs"
+	"blobcache.io/glfs"
 	"go.brendoncarroll.net/state/cadata"
 )
 

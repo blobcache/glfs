@@ -12,7 +12,7 @@ import (
 	"go.brendoncarroll.net/exp/streams"
 	"go.brendoncarroll.net/state/cadata"
 
-	"github.com/blobcache/glfs"
+	"blobcache.io/glfs"
 )
 
 var _ fs.FS = &FS{}

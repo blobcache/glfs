@@ -1,4 +1,4 @@
-module github.com/blobcache/glfs
+module blobcache.io/glfs
 
 go 1.23
 

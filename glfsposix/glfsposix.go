@@ -10,8 +10,8 @@ import (
 	"go.brendoncarroll.net/state/posixfs"
 	"golang.org/x/sync/semaphore"
 
-	"github.com/blobcache/glfs"
-	"github.com/blobcache/glfs/internal/slices2"
+	"blobcache.io/glfs"
+	"blobcache.io/glfs/internal/slices2"
 )
 
 // Import goes from a POSIX filesystem to GLFS

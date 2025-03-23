@@ -12,7 +12,7 @@ import (
 
 	"go.brendoncarroll.net/state/cadata"
 
-	"github.com/blobcache/glfs"
+	"blobcache.io/glfs"
 )
 
 const MaxPathLen = 4096

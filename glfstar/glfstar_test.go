@@ -13,7 +13,7 @@ import (
 	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/blobcache/glfs"
+	"blobcache.io/glfs"
 )
 
 var corpus = []string{

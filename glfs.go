@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/blobcache/glfs/bigblob"
+	"blobcache.io/glfs/bigblob"
 	"go.brendoncarroll.net/state/cadata"
 )
 

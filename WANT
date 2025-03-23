@@ -9,7 +9,7 @@ local want = import "@want";
 	namespace: {
 		want: want.blob(importstr "@want"),
 		recipes: want.pick(
-			want.importGit("https://git.brendoncarroll.net/want/want", "3fe906794047584a1f50c0ab68b8b0407c17e06c"),
+			want.importGit("https://git.brendoncarroll.net/want/want", "c2e881240f5e869cd8f956581b97de3ed98f9452"),
 			"recipes",
 		),
 	}
