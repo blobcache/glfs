@@ -47,7 +47,7 @@ func (a Ref) Equals(b Ref) bool {
 
 // PostTyped posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
-func (ag *Agent) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
+func (ag *Machine) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
 	tw := ag.NewTypedWriter(s, ty)
 	tw.SetWriteContext(ctx)
 	if _, err := io.Copy(tw, r); err != nil {
@@ -58,7 +58,7 @@ func (ag *Agent) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.R
 
 // GetTyped retrieves the object in s at x.
 // If x.Type != ty, ErrRefType is returned.
-func (ag *Agent) GetTyped(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
+func (ag *Machine) GetTyped(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
 	if ty != "" && x.Type != ty {
 		return nil, ErrRefType{Have: x.Type, Want: ty}
 	}
@@ -71,7 +71,7 @@ type TypedWriter struct {
 }
 
 // NewTypedWriter returns a new writer for ty.
-func (ag *Agent) NewTypedWriter(s cadata.Poster, ty Type) *TypedWriter {
+func (ag *Machine) NewTypedWriter(s cadata.Poster, ty Type) *TypedWriter {
 	return &TypedWriter{ty: ty, bw: ag.bbag.NewWriter(s, ag.makeSalt(ty))}
 }
 

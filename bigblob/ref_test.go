@@ -5,13 +5,13 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"go.brendoncarroll.net/state/cadata"
 	"github.com/stretchr/testify/require"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 func TestRefPostGet(t *testing.T) {
 	ctx := context.TODO()
-	ag := NewAgent()
+	ag := NewMachine()
 	s := cadata.NewMem(cadata.DefaultHash, 1<<10)
 	testData := "test data"
 	ref, err := ag.post(ctx, s, new([32]byte), []byte(testData))
@@ -25,7 +25,7 @@ func TestRefPostGet(t *testing.T) {
 
 func TestRefMarshal(t *testing.T) {
 	ctx := context.TODO()
-	ag := NewAgent()
+	ag := NewMachine()
 	s := cadata.NewMem(cadata.DefaultHash, 1<<10)
 	testData := "test data"
 	ref, err := ag.post(ctx, s, new([32]byte), []byte(testData))

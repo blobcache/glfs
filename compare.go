@@ -18,7 +18,7 @@ type Diff struct {
 
 // Compare compares left and right and returns a diff.
 // Left and right must both point only to data in s.
-func (ag *Agent) Compare(ctx context.Context, dst cadata.PostExister, src cadata.Getter, left, right Ref) (*Diff, error) {
+func (ag *Machine) Compare(ctx context.Context, dst cadata.PostExister, src cadata.Getter, left, right Ref) (*Diff, error) {
 	if left.Type != right.Type {
 		return &Diff{
 			Left:  &left,
@@ -49,7 +49,7 @@ func (ag *Agent) Compare(ctx context.Context, dst cadata.PostExister, src cadata
 	}
 }
 
-func (ag *Agent) compareTrees(ctx context.Context, dst cadata.PostExister, src cadata.Getter, lTree, rTree []TreeEntry) (*Diff, error) {
+func (ag *Machine) compareTrees(ctx context.Context, dst cadata.PostExister, src cadata.Getter, lTree, rTree []TreeEntry) (*Diff, error) {
 	onlyLeft := onlyInFirst(lTree, rTree)
 	onlyRight := onlyInFirst(rTree, lTree)
 	var both []TreeEntry

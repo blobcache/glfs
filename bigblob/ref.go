@@ -95,7 +95,7 @@ func marshalRef(x Ref) []byte {
 	return data
 }
 
-func (ag *Agent) post(ctx context.Context, s cadata.Poster, salt *[32]byte, ptext []byte) (*Ref, error) {
+func (ag *Machine) post(ctx context.Context, s cadata.Poster, salt *[32]byte, ptext []byte) (*Ref, error) {
 	buf := ag.acquireBuffer(len(ptext))
 	defer ag.releaseBuffer(buf)
 	ctext := make([]byte, len(ptext))
@@ -110,7 +110,7 @@ func (ag *Agent) post(ctx context.Context, s cadata.Poster, salt *[32]byte, ptex
 	}, nil
 }
 
-func (ag *Agent) getF(ctx context.Context, s cadata.Getter, ref Ref, fn func([]byte) error) error {
+func (ag *Machine) getF(ctx context.Context, s cadata.Getter, ref Ref, fn func([]byte) error) error {
 	if value, ok := ag.cache.Get(ref.Key()); ok {
 		return fn(value)
 	}

@@ -30,7 +30,7 @@ type GCOption func(*gcConfig)
 // GC will remove objects from store which are not referenced by any of the refs in keep.
 // If GC does not successfully complete, referential integrity may be violated, and GC will need
 // to be run to completion before it is safe to call Sync on the store again.
-func (ag *Agent) GC(ctx context.Context, store GetListDeleter, keep []Ref, opts ...GCOption) (*GCResult, error) {
+func (ag *Machine) GC(ctx context.Context, store GetListDeleter, keep []Ref, opts ...GCOption) (*GCResult, error) {
 	// compute reachable
 	reachable := &idSet{}
 	for _, ref := range keep {
@@ -67,7 +67,7 @@ type AddExister interface {
 }
 
 // Populate adds everything reachable form x to dst
-func (ag *Agent) Populate(ctx context.Context, store GetListDeleter, x Ref, dst AddExister) error {
+func (ag *Machine) Populate(ctx context.Context, store GetListDeleter, x Ref, dst AddExister) error {
 	sem := semaphore.NewWeighted(int64(runtime.GOMAXPROCS(0)))
 	return ag.Traverse(ctx, store, sem, x, Traverser{
 		Enter: func(ctx context.Context, id cadata.ID) (bool, error) {

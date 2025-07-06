@@ -18,14 +18,14 @@ import (
 var _ fs.FS = &FS{}
 
 type FS struct {
-	ag   *glfs.Agent
+	ag   *glfs.Machine
 	s    cadata.Getter
 	root glfs.Ref
 }
 
 func New(s cadata.Getter, root glfs.Ref) *FS {
 	return &FS{
-		ag:   glfs.NewAgent(),
+		ag:   glfs.NewMachine(),
 		s:    s,
 		root: root,
 	}
@@ -54,7 +54,7 @@ var _ fs.File = &File{}
 
 type File struct {
 	ctx context.Context
-	ag  *glfs.Agent
+	ag  *glfs.Machine
 	s   cadata.Getter
 
 	ref  glfs.Ref
@@ -65,7 +65,7 @@ type File struct {
 	tr *glfs.TreeReader
 }
 
-func newGLFSFile(ctx context.Context, ag *glfs.Agent, s cadata.Getter, ent glfs.TreeEntry) *File {
+func newGLFSFile(ctx context.Context, ag *glfs.Machine, s cadata.Getter, ent glfs.TreeEntry) *File {
 	return &File{
 		ctx: ctx,
 		ag:  ag,

@@ -89,7 +89,7 @@ func (te *TreeEntry) Validate() error {
 
 // GetAtPath returns a ref to the object under ref at subpath.
 // ErrNoEnt is returned if there is no entry at that path.
-func (ag *Agent) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, subpath string) (*Ref, error) {
+func (ag *Machine) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, subpath string) (*Ref, error) {
 	ent, err := ag.Lookup(ctx, store, TreeEntry{Name: "", Ref: ref}, subpath)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (ag *Agent) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, su
 	return &ent.Ref, nil
 }
 
-func (ag *Agent) Lookup(ctx context.Context, store cadata.Getter, ent TreeEntry, subpath string) (*TreeEntry, error) {
+func (ag *Machine) Lookup(ctx context.Context, store cadata.Getter, ent TreeEntry, subpath string) (*TreeEntry, error) {
 	subpath = strings.Trim(subpath, "/")
 	if subpath == "" {
 		return &ent, nil
@@ -133,7 +133,7 @@ func (ag *Agent) Lookup(ctx context.Context, store cadata.Getter, ent TreeEntry,
 
 // GetTree retreives the tree in store at Ref if it exists.
 // If ref.Type != TypeTree ErrRefType is returned.
-func (ag *Agent) GetTreeSlice(ctx context.Context, store cadata.Getter, ref Ref, maxEnts int) ([]TreeEntry, error) {
+func (ag *Machine) GetTreeSlice(ctx context.Context, store cadata.Getter, ref Ref, maxEnts int) ([]TreeEntry, error) {
 	tr, err := ag.NewTreeReader(store, ref)
 	if err != nil {
 		return nil, err
@@ -147,11 +147,11 @@ type WalkTreeFunc = func(prefix string, tree TreeEntry) error
 // WalkTree walks the tree and calls f with tree entries in lexigraphical order
 // file1.txt comes before file2.txt
 // dir1/ comes before dir1/file1.txt
-func (ag *Agent) WalkTree(ctx context.Context, store cadata.Getter, ref Ref, f WalkTreeFunc) error {
+func (ag *Machine) WalkTree(ctx context.Context, store cadata.Getter, ref Ref, f WalkTreeFunc) error {
 	return ag.walkTree(ctx, store, ref, f, "")
 }
 
-func (ag *Agent) walkTree(ctx context.Context, store cadata.Getter, ref Ref, f WalkTreeFunc, prefix string) error {
+func (ag *Machine) walkTree(ctx context.Context, store cadata.Getter, ref Ref, f WalkTreeFunc, prefix string) error {
 	// TODO: use TreeReader
 	ents, err := ag.GetTreeSlice(ctx, store, ref, 1e6)
 	if err != nil {
@@ -175,7 +175,7 @@ type RefWalker func(ref Ref) error
 
 // WalkRefs calls fn with every Ref reacheable from ref, including Ref. The only guarentee about order is bottom up.
 // if a tree is encoutered the child refs will be visited first.
-func (ag *Agent) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefWalker) error {
+func (ag *Machine) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefWalker) error {
 	if ref.Type == TypeTree {
 		// TODO: use tree reader
 		ents, err := ag.GetTreeSlice(ctx, s, ref, 1e6)
@@ -191,7 +191,7 @@ func (ag *Agent) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefW
 	return fn(ref)
 }
 
-func (ag *Agent) PostTree(ctx context.Context, s cadata.PostExister, ents iter.Seq[TreeEntry]) (*Ref, error) {
+func (ag *Machine) PostTree(ctx context.Context, s cadata.PostExister, ents iter.Seq[TreeEntry]) (*Ref, error) {
 	var rootEnts []TreeEntry
 	subents := map[string][]TreeEntry{}
 	for ent := range ents {
@@ -236,7 +236,7 @@ func (ag *Agent) PostTree(ctx context.Context, s cadata.PostExister, ents iter.S
 	return tw.Finish(ctx)
 }
 
-func (ag *Agent) PostTreeSlice(ctx context.Context, dst cadata.PostExister, ents []TreeEntry) (*Ref, error) {
+func (ag *Machine) PostTreeSlice(ctx context.Context, dst cadata.PostExister, ents []TreeEntry) (*Ref, error) {
 	return ag.PostTree(ctx, dst, func(yield func(TreeEntry) bool) {
 		for _, ent := range ents {
 			if !yield(ent) {
@@ -246,7 +246,7 @@ func (ag *Agent) PostTreeSlice(ctx context.Context, dst cadata.PostExister, ents
 	})
 }
 
-func (ag *Agent) PostTreeMap(ctx context.Context, s cadata.PostExister, m map[string]Ref) (*Ref, error) {
+func (ag *Machine) PostTreeMap(ctx context.Context, s cadata.PostExister, m map[string]Ref) (*Ref, error) {
 	entries := []TreeEntry{}
 	for k, v := range m {
 		entries = append(entries, TreeEntry{
@@ -287,7 +287,7 @@ type TreeWriter struct {
 	lastName string
 }
 
-func (ag *Agent) NewTreeWriter(s cadata.PostExister) *TreeWriter {
+func (ag *Machine) NewTreeWriter(s cadata.PostExister) *TreeWriter {
 	tw := ag.NewTypedWriter(s, TypeTree)
 	return &TreeWriter{
 		dst: s,
@@ -319,7 +319,7 @@ func (tw *TreeWriter) Finish(ctx context.Context) (*Ref, error) {
 }
 
 type TreeReader struct {
-	ag *Agent
+	ag *Machine
 
 	s   cadata.Getter
 	ref Ref
@@ -329,14 +329,14 @@ type TreeReader struct {
 	last string
 }
 
-func (ag *Agent) NewTreeReader(s cadata.Getter, x Ref) (*TreeReader, error) {
+func (ag *Machine) NewTreeReader(s cadata.Getter, x Ref) (*TreeReader, error) {
 	if x.Type != TypeTree {
 		return nil, ErrRefType{Have: x.Type, Want: TypeTree}
 	}
 	return &TreeReader{ag: ag, s: s, ref: x}, nil
 }
 
-func (ag *Agent) ReadTreeFrom(r io.Reader) *TreeReader {
+func (ag *Machine) ReadTreeFrom(r io.Reader) *TreeReader {
 	return &TreeReader{
 		ag:  ag,
 		r:   r,

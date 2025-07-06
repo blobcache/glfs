@@ -15,7 +15,7 @@ import (
 )
 
 // Import goes from a POSIX filesystem to GLFS
-func Import(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cadata.PostExister, fsx posixfs.FS, p string) (*glfs.Ref, error) {
+func Import(ctx context.Context, ag *glfs.Machine, sem *semaphore.Weighted, s cadata.PostExister, fsx posixfs.FS, p string) (*glfs.Ref, error) {
 	return glfsImport(ctx, glfsImportParams{
 		ag:  ag,
 		sem: sem,
@@ -27,7 +27,7 @@ func Import(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cada
 }
 
 type glfsImportParams struct {
-	ag  *glfs.Agent
+	ag  *glfs.Machine
 	sem *semaphore.Weighted
 	s   cadata.PostExister
 
@@ -79,7 +79,7 @@ func glfsImport(ctx context.Context, p glfsImportParams) (*glfs.Ref, error) {
 }
 
 // Export exports a glfs object beneath p in the filesystem fsx.
-func Export(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cadata.Getter, root glfs.Ref, fsx posixfs.FS, p string) error {
+func Export(ctx context.Context, ag *glfs.Machine, sem *semaphore.Weighted, s cadata.Getter, root glfs.Ref, fsx posixfs.FS, p string) error {
 	fileMode := posixfs.FileMode(0o644)
 	if root.Type == glfs.TypeTree {
 		fileMode = 0o755
@@ -96,7 +96,7 @@ func Export(ctx context.Context, ag *glfs.Agent, sem *semaphore.Weighted, s cada
 }
 
 type glfsExportParams struct {
-	ag       *glfs.Agent
+	ag       *glfs.Machine
 	s        cadata.Getter
 	sem      *semaphore.Weighted
 	fs       posixfs.FS

@@ -25,7 +25,7 @@ func TestImport(t *testing.T) {
 		tc := tc
 		t.Run(path.Base(tc), func(t *testing.T) {
 			ctx := context.Background()
-			op := glfs.NewAgent()
+			op := glfs.NewMachine()
 			s := newStore(t)
 
 			zr := newZipReader(t, tc)

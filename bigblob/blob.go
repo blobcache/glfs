@@ -26,7 +26,7 @@ func (r1 Root) Equals(r2 Root) bool {
 	return r1.Size == r2.Size && r1.BlockSize == r2.BlockSize && r1.Ref.Equals(r2.Ref)
 }
 
-func (ag *Agent) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset int64, buf []byte) (n int, err error) {
+func (ag *Machine) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset int64, buf []byte) (n int, err error) {
 	level := depth(x.Size, x.BlockSize)
 	bf := branchingFactor(x.BlockSize)
 	blockIndex := uint64(offset) / x.BlockSize
@@ -48,7 +48,7 @@ func (ag *Agent) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset int
 	return n, nil
 }
 
-func (ag *Agent) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, level, blockIndex int) (*Ref, error) {
+func (ag *Machine) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, level, blockIndex int) (*Ref, error) {
 	if level == 0 {
 		return &root, nil
 	}
@@ -68,7 +68,7 @@ func (ag *Agent) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, le
 
 type Writer struct {
 	ctx                context.Context
-	ag                 *Agent
+	ag                 *Machine
 	s                  cadata.Poster
 	blockSize          int
 	indexSalt, rawSalt *[32]byte
@@ -80,7 +80,7 @@ type Writer struct {
 	buf     []byte
 }
 
-func (ag *Agent) NewWriter(s cadata.Poster, salt *[32]byte) *Writer {
+func (ag *Machine) NewWriter(s cadata.Poster, salt *[32]byte) *Writer {
 	blockSize := s.MaxSize()
 	if ag.blockSize > 0 {
 		blockSize = ag.blockSize
@@ -204,7 +204,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 }
 
 // Create creates a Blob and returns it's Root.
-func (ag *Agent) Create(ctx context.Context, s cadata.Poster, salt *[32]byte, r io.Reader) (*Root, error) {
+func (ag *Machine) Create(ctx context.Context, s cadata.Poster, salt *[32]byte, r io.Reader) (*Root, error) {
 	w := ag.NewWriter(s, salt)
 	w.SetWriteContext(ctx)
 	defer w.SetWriteContext(nil)
@@ -265,7 +265,7 @@ func branchingFactor(blockSize uint64) uint64 {
 	return blockSize / maxRefSize
 }
 
-func (ag *Agent) Sync(ctx context.Context, dst cadata.PostExister, src cadata.Getter, x Root, fn func(r *Reader) error) error {
+func (ag *Machine) Sync(ctx context.Context, dst cadata.PostExister, src cadata.Getter, x Root, fn func(r *Reader) error) error {
 	if exists, err := dst.Exists(ctx, x.Ref.CID); err != nil {
 		return err
 	} else if exists {
@@ -278,7 +278,7 @@ func (ag *Agent) Sync(ctx context.Context, dst cadata.PostExister, src cadata.Ge
 	return ag.sync(ctx, dst, src, x.BlockSize, x.Ref, depth(x.Size, x.BlockSize))
 }
 
-func (ag *Agent) sync(ctx context.Context, dst cadata.Poster, src cadata.Getter, blockSize uint64, ref Ref, level int) error {
+func (ag *Machine) sync(ctx context.Context, dst cadata.Poster, src cadata.Getter, blockSize uint64, ref Ref, level int) error {
 	if level > 0 {
 		if err := ag.getF(ctx, src, ref, func(data []byte) error {
 			idx, err := newIndexUsing(data, int(blockSize))
@@ -302,7 +302,7 @@ func (ag *Agent) sync(ctx context.Context, dst cadata.Poster, src cadata.Getter,
 	return cadata.Copy(ctx, dst, src, ref.CID)
 }
 
-func (ag *Agent) Populate(ctx context.Context, s cadata.Getter, root Root, dst AddExister) error {
+func (ag *Machine) Populate(ctx context.Context, s cadata.Getter, root Root, dst AddExister) error {
 	sem := semaphore.NewWeighted(int64(runtime.GOMAXPROCS(0)))
 	return ag.Traverse(ctx, s, sem, root, Traverser{
 		Enter: func(ctx context.Context, id cadata.ID) (bool, error) {
@@ -318,7 +318,7 @@ func (ag *Agent) Populate(ctx context.Context, s cadata.Getter, root Root, dst A
 	})
 }
 
-func (ag *Agent) Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
+func (ag *Machine) Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
 	rs := make([]io.Reader, len(roots))
 	for i := range roots {
 		rs[i] = ag.NewReader(ctx, s, roots[i])

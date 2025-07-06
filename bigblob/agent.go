@@ -7,10 +7,10 @@ import (
 	"go.brendoncarroll.net/state/cadata"
 )
 
-type Option func(*Agent)
+type Option func(*Machine)
 
 func WithCacheSize(n int) Option {
-	return func(ag *Agent) {
+	return func(ag *Machine) {
 		ag.cacheSize = n
 	}
 }
@@ -22,12 +22,13 @@ func WithBlockSize(n int) Option {
 	if n < 0 {
 		panic(n)
 	}
-	return func(ag *Agent) {
+	return func(ag *Machine) {
 		ag.blockSize = n
 	}
 }
 
-type Agent struct {
+// Machine contains configuration options and caches.
+type Machine struct {
 	cacheSize int
 	blockSize int
 
@@ -35,8 +36,8 @@ type Agent struct {
 	bufPool sync.Pool
 }
 
-func NewAgent(opts ...Option) *Agent {
-	o := Agent{
+func NewMachine(opts ...Option) *Machine {
+	o := Machine{
 		cacheSize: 64,
 		bufPool: sync.Pool{
 			New: func() interface{} {
@@ -52,7 +53,7 @@ func NewAgent(opts ...Option) *Agent {
 	return &o
 }
 
-func (ag *Agent) acquireBuffer(n int) *[]byte {
+func (ag *Machine) acquireBuffer(n int) *[]byte {
 	x := ag.bufPool.Get().(*[]byte)
 	if len(*x) < n {
 		*x = append(*x, make([]byte, n-len(*x))...)
@@ -60,7 +61,7 @@ func (ag *Agent) acquireBuffer(n int) *[]byte {
 	return x
 }
 
-func (ag *Agent) releaseBuffer(x *[]byte) {
+func (ag *Machine) releaseBuffer(x *[]byte) {
 	ag.bufPool.Put(x)
 }
 

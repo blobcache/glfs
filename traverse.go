@@ -16,7 +16,7 @@ type Traverser struct {
 	Exit func(ctx context.Context, ty Type, level int, ref bigblob.Ref) error
 }
 
-func (ag *Agent) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, x Ref, tr Traverser) error {
+func (ag *Machine) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, x Ref, tr Traverser) error {
 	if sem == nil {
 		sem = semaphore.NewWeighted(1)
 	}

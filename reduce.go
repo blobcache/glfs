@@ -21,7 +21,7 @@ import (
 // Merging(1, 2, 3, 4, 5) == Merge(Merge(Merge(Merge(1, 2), 3), 4), 5)
 //
 // Merge will call Sync to protect referential integrity in dst.
-func (ag *Agent) Merge(ctx context.Context, dst cadata.PostExister, src cadata.Getter, layers ...Ref) (*Ref, error) {
+func (ag *Machine) Merge(ctx context.Context, dst cadata.PostExister, src cadata.Getter, layers ...Ref) (*Ref, error) {
 	switch {
 	case len(layers) == 0:
 		return nil, fmt.Errorf("merged 0 layers")
@@ -74,7 +74,7 @@ func (ag *Agent) Merge(ctx context.Context, dst cadata.PostExister, src cadata.G
 	return ag.PostTreeSlice(ctx, dst, tree)
 }
 
-func (ag *Agent) Concat(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
+func (ag *Machine) Concat(ctx context.Context, store cadata.Store, layers ...Ref) (*Ref, error) {
 	switch {
 	case len(layers) == 0:
 		return nil, errors.New("concat 0 refs")
@@ -96,7 +96,7 @@ func (ag *Agent) Concat(ctx context.Context, store cadata.Store, layers ...Ref) 
 	}
 }
 
-func (ag *Agent) concat2(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
+func (ag *Machine) concat2(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
 	switch {
 	case left.Type == TypeBlob && right.Type == TypeBlob:
 		return ag.concatBlobs(ctx, store, left, right)
@@ -107,7 +107,7 @@ func (ag *Agent) concat2(ctx context.Context, store cadata.Store, left, right Re
 	}
 }
 
-func (ag *Agent) concat2Trees(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
+func (ag *Machine) concat2Trees(ctx context.Context, store cadata.Store, left, right Ref) (*Ref, error) {
 	// TODO: use TreeReader
 	leftTree, err := ag.GetTreeSlice(ctx, store, left, 1e6)
 	if err != nil {
@@ -143,7 +143,7 @@ func (ag *Agent) concat2Trees(ctx context.Context, store cadata.Store, left, rig
 	return ag.PostTreeSlice(ctx, store, tree)
 }
 
-func (ag *Agent) concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref) (*Ref, error) {
+func (ag *Machine) concatBlobs(ctx context.Context, s cadata.Store, refs ...Ref) (*Ref, error) {
 	var roots []bigblob.Root
 	for _, ref := range refs {
 		roots = append(roots, ref.Root)

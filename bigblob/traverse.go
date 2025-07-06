@@ -14,14 +14,14 @@ type Traverser struct {
 	Exit  func(ctx context.Context, level int, ref Ref) error
 }
 
-func (ag *Agent) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, root Root, tr Traverser) error {
+func (ag *Machine) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, root Root, tr Traverser) error {
 	if root.BlockSize == 0 {
 		return fmt.Errorf("block size cannot be zero")
 	}
 	return ag.traverse(ctx, s, sem, root.BlockSize, depth(root.Size, root.BlockSize), root.Ref, tr)
 }
 
-func (ag *Agent) traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, blockSize uint64, level int, x Ref, tr Traverser) error {
+func (ag *Machine) traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, blockSize uint64, level int, x Ref, tr Traverser) error {
 	if yes, err := tr.Enter(ctx, x.CID); err != nil {
 		return err
 	} else if !yes {

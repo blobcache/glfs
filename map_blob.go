@@ -10,7 +10,7 @@ import (
 
 type BlobMapper func(p string, in io.Reader, out io.Writer) error
 
-func (ag *Agent) MapBlobs(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f BlobMapper) (*Ref, error) {
+func (ag *Machine) MapBlobs(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f BlobMapper) (*Ref, error) {
 	return ag.MapLeaves(ctx, dst, src, root, func(p string, x Ref) (*Ref, error) {
 		switch x.Type {
 		case TypeBlob:
@@ -29,11 +29,11 @@ func (ag *Agent) MapBlobs(ctx context.Context, dst cadata.PostExister, src cadat
 
 type RefMapper func(p string, ref Ref) (*Ref, error)
 
-func (ag *Agent) MapLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f RefMapper) (*Ref, error) {
+func (ag *Machine) MapLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f RefMapper) (*Ref, error) {
 	return ag.mapLeaves(ctx, dst, src, root, "", f)
 }
 
-func (ag *Agent) mapLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f RefMapper) (*Ref, error) {
+func (ag *Machine) mapLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f RefMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
 		// TODO: use TreeReader

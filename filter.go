@@ -12,7 +12,7 @@ import (
 
 // FilterPaths returns a version of root with paths filtered using f as a predicate.
 // If f returns true for a path it will be included in the output, otherwise it will not.
-func (ag *Agent) FilterPaths(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f func(string) bool) (*Ref, error) {
+func (ag *Machine) FilterPaths(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f func(string) bool) (*Ref, error) {
 	ref, err := ag.filterPaths(ctx, dst, src, root, "", f)
 	if err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func (ag *Agent) FilterPaths(ctx context.Context, dst cadata.PostExister, src ca
 	return ref, nil
 }
 
-func (ag *Agent) filterPaths(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f func(string) bool) (*Ref, error) {
+func (ag *Machine) filterPaths(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f func(string) bool) (*Ref, error) {
 	switch root.Type {
 	case TypeTree:
 		// TODO: use TreeReader
@@ -61,7 +61,7 @@ func (ag *Agent) filterPaths(ctx context.Context, dst cadata.PostExister, src ca
 	}
 }
 
-func (ag *Agent) ShardLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, n int) ([]Ref, error) {
+func (ag *Machine) ShardLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, n int) ([]Ref, error) {
 	hashFunc := func(p string) uint32 {
 		h := fnv.New32()
 		h.Write([]byte(p))

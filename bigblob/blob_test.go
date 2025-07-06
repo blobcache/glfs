@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"go.brendoncarroll.net/state/cadata"
 	"github.com/stretchr/testify/require"
+	"go.brendoncarroll.net/state/cadata"
 )
 
 func TestDepth(t *testing.T) {
@@ -46,7 +46,7 @@ func TestDepth(t *testing.T) {
 func TestCreateFile(t *testing.T) {
 	const defaultMaxSize = 1 << 20
 	ctx := context.Background()
-	ag := NewAgent()
+	ag := NewMachine()
 	s := cadata.NewMem(cadata.DefaultHash, defaultMaxSize)
 
 	const size = defaultMaxSize * 3
@@ -94,7 +94,7 @@ func TestCreateRead(t *testing.T) {
 
 func testCreateRead(t *testing.T, size, blockSize int) {
 	ctx := context.Background()
-	ag := NewAgent()
+	ag := NewMachine()
 	s := cadata.NewMem(cadata.DefaultHash, blockSize)
 	newRNG := func() io.Reader { return io.LimitReader(rand.New(rand.NewSource(0)), int64(size)) }
 

@@ -30,7 +30,7 @@ func TestReadTAR(t *testing.T) {
 		t.Run(path.Base(tc), func(t *testing.T) {
 			ctx := context.Background()
 			s := newStore(t)
-			op := glfs.NewAgent()
+			op := glfs.NewMachine()
 			withTARStream(t, tc, func(tr *tar.Reader) {
 				ref, err := ReadTAR(ctx, op, s, tr)
 				require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestWriteRead(t *testing.T) {
 	i := 0
 	ctx := context.Background()
 	s := newStore(t)
-	op := glfs.NewAgent()
+	op := glfs.NewMachine()
 	withTARStream(t, corpus[i], func(tr *tar.Reader) {
 		expected, err := ReadTAR(ctx, op, s, tr)
 		require.NoError(t, err)

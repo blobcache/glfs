@@ -12,17 +12,17 @@ import (
 type Reader = bigblob.Reader
 
 // PostBlob creates a new blob with data from r, and returns a Ref to it.
-func (ag *Agent) PostBlob(ctx context.Context, s cadata.Poster, r io.Reader) (*Ref, error) {
+func (ag *Machine) PostBlob(ctx context.Context, s cadata.Poster, r io.Reader) (*Ref, error) {
 	return ag.PostTyped(ctx, s, TypeBlob, r)
 }
 
 // GetBlob returns an io.ReadSeeker for accessing data from the blob at x
-func (ag *Agent) GetBlob(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
+func (ag *Machine) GetBlob(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
 	return ag.NewBlobReader(ctx, s, x)
 }
 
 // GetBlobBytes reads the entire contents of the blob at x into memory and returns the slice of bytes.
-func (ag *Agent) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSize int) ([]byte, error) {
+func (ag *Machine) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSize int) ([]byte, error) {
 	r, err := ag.GetBlob(ctx, s, x)
 	if err != nil {
 		return nil, err
@@ -30,11 +30,11 @@ func (ag *Agent) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSi
 	return readAtMost(r, maxSize)
 }
 
-func (ag *Agent) NewBlobReader(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
+func (ag *Machine) NewBlobReader(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
 	return ag.GetTyped(ctx, s, TypeBlob, x)
 }
 
-func (ag *Agent) NewBlobWriter(s cadata.Poster) *TypedWriter {
+func (ag *Machine) NewBlobWriter(s cadata.Poster) *TypedWriter {
 	return ag.NewTypedWriter(s, TypeBlob)
 }
 

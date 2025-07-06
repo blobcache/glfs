@@ -9,40 +9,53 @@ import (
 	"go.brendoncarroll.net/state/cadata"
 )
 
-type Option func(*Agent)
+type Option func(*Machine)
 
 // WithSalt sets the salt used for deriving encryption keys.
 func WithSalt(salt [32]byte) Option {
-	return func(ag *Agent) {
+	return func(ag *Machine) {
 		ag.salt = &salt
 	}
 }
 
-type Agent struct {
+// Machine holds a configuration, and caches.
+// Machine configuration is immutable once it is created.
+// Any cache state should be transparent to the user, so the Machine
+// should appear stateless.
+// Machines are thread-safe.
+//
+// Creating a new Machine will perform better than using the default Machine when
+// there are many concurrent operations being performed on unrelated filesystems,
+// since the unreleated tasks won't be affecting the same cache.
+//
+// Repeated lookups within a given filesystem will be much faster when rerun on the same machine.
+// This is because each hop must be read from the store and decrypted, the decrypted plaintext
+// will be cached by the machine.
+type Machine struct {
 	salt      *[32]byte
 	blockSize int
 
-	bbag *bigblob.Agent
+	bbag *bigblob.Machine
 }
 
-func NewAgent(opts ...Option) *Agent {
-	o := &Agent{
+func NewMachine(opts ...Option) *Machine {
+	o := &Machine{
 		salt:      new([32]byte),
 		blockSize: DefaultBlockSize,
 	}
-	o.bbag = bigblob.NewAgent(bigblob.WithBlockSize(o.blockSize))
+	o.bbag = bigblob.NewMachine(bigblob.WithBlockSize(o.blockSize))
 	return o
 }
 
-func (ag *Agent) makeSalt(ty Type) *[32]byte {
+func (ag *Machine) makeSalt(ty Type) *[32]byte {
 	var out [32]byte
 	bigblob.DeriveKey(out[:], ag.salt, []byte(ty))
 	return &out
 }
 
-var defaultOp = NewAgent()
+var defaultOp = NewMachine()
 
-// PostRaw calls PostRaw on the default Agent
+// PostRaw calls PostRaw on the default Machine
 func PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
 	return defaultOp.PostTyped(ctx, s, ty, r)
 }
@@ -111,27 +124,27 @@ func FilterPaths(ctx context.Context, dst cadata.PostExister, src cadata.Getter,
 	return defaultOp.FilterPaths(ctx, dst, src, root, f)
 }
 
-// ShardLeaves calls ShardLeaves on the default Agent
+// ShardLeaves calls ShardLeaves on the default Machine
 func ShardLeaves(ctx context.Context, dst cadata.PostExister, s cadata.Getter, root Ref, n int) ([]Ref, error) {
 	return defaultOp.ShardLeaves(ctx, dst, s, root, n)
 }
 
-// MapBlobs calls MapBlobs on the default Agent
+// MapBlobs calls MapBlobs on the default Machine
 func MapBlobs(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f BlobMapper) (*Ref, error) {
 	return defaultOp.MapBlobs(ctx, dst, src, root, f)
 }
 
-// MapLeaves calls MapLeaves on the default Agent
+// MapLeaves calls MapLeaves on the default Machine
 func MapLeaves(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f RefMapper) (*Ref, error) {
 	return defaultOp.MapLeaves(ctx, dst, src, root, f)
 }
 
-// MapEntryAt calls MapEntryAt on the default Agent
+// MapEntryAt calls MapEntryAt on the default Machine
 func MapEntryAt(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
 	return defaultOp.MapEntryAt(ctx, dst, src, root, p, f)
 }
 
-// Merge calls Merge on the default Agent
+// Merge calls Merge on the default Machine
 func Merge(ctx context.Context, dst cadata.PostExister, src cadata.Getter, layers ...Ref) (*Ref, error) {
 	return defaultOp.Merge(ctx, dst, src, layers...)
 }
