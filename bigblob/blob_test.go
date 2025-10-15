@@ -8,8 +8,9 @@ import (
 	"math/rand"
 	"testing"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"github.com/stretchr/testify/require"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 func TestDepth(t *testing.T) {
@@ -47,7 +48,7 @@ func TestCreateFile(t *testing.T) {
 	const defaultMaxSize = 1 << 20
 	ctx := context.Background()
 	ag := NewMachine()
-	s := cadata.NewMem(cadata.DefaultHash, defaultMaxSize)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), defaultMaxSize)
 
 	const size = defaultMaxSize * 3
 	rng := rand.New(rand.NewSource(0))
@@ -57,7 +58,7 @@ func TestCreateFile(t *testing.T) {
 	require.NotNil(t, f)
 	require.Equal(t, uint64(size), f.Size)
 
-	exists, err := s.Exists(ctx, f.Ref.CID)
+	exists, err := ExistsUnit(ctx, s, f.Ref.CID)
 	require.Nil(t, err)
 	require.True(t, exists)
 	require.Equal(t, 4, s.Len())
@@ -95,7 +96,7 @@ func TestCreateRead(t *testing.T) {
 func testCreateRead(t *testing.T, size, blockSize int) {
 	ctx := context.Background()
 	ag := NewMachine()
-	s := cadata.NewMem(cadata.DefaultHash, blockSize)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), 1<<20)
 	newRNG := func() io.Reader { return io.LimitReader(rand.New(rand.NewSource(0)), int64(size)) }
 
 	root, err := ag.Create(ctx, s, nil, newRNG())

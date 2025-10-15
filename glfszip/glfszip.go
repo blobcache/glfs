@@ -5,12 +5,12 @@ import (
 	"context"
 	"io"
 
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 // Import creates a glfs.Tree from the contents of a zip.Reader: zr.
-func Import(ctx context.Context, ag *glfs.Machine, s cadata.PostExister, zr *zip.Reader) (*glfs.Ref, error) {
+func Import(ctx context.Context, ag *glfs.Machine, s schema.WO, zr *zip.Reader) (*glfs.Ref, error) {
 	var ents []glfs.TreeEntry
 	for _, f := range zr.File {
 		rc, err := f.Open()

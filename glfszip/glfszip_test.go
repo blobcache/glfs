@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs"
 	"github.com/stretchr/testify/require"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 var corpus = []string{
@@ -54,6 +55,6 @@ func newZipReader(t testing.TB, u string) *zip.Reader {
 	return zr
 }
 
-func newStore(t testing.TB) cadata.Store {
-	return cadata.NewMem(cadata.DefaultHash, glfs.DefaultBlockSize)
+func newStore(t testing.TB) *schema.MemStore {
+	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), glfs.DefaultBlockSize)
 }

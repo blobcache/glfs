@@ -7,13 +7,14 @@ import (
 	"log"
 	"strings"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 func main() {
 	ctx := context.Background()
-	s := cadata.NewMem(cadata.DefaultHash, glfs.DefaultBlockSize)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), 1<<20)
 	ref, err := glfs.PostBlob(ctx, s, strings.NewReader("test data"))
 	if err != nil {
 		log.Fatal(err)

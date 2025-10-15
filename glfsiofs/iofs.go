@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"go.brendoncarroll.net/exp/streams"
-	"go.brendoncarroll.net/state/cadata"
 
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs"
 )
 
@@ -19,11 +19,11 @@ var _ fs.FS = &FS{}
 
 type FS struct {
 	ag   *glfs.Machine
-	s    cadata.Getter
+	s    schema.RO
 	root glfs.Ref
 }
 
-func New(s cadata.Getter, root glfs.Ref) *FS {
+func New(s schema.RO, root glfs.Ref) *FS {
 	return &FS{
 		ag:   glfs.NewMachine(),
 		s:    s,
@@ -55,7 +55,7 @@ var _ fs.File = &File{}
 type File struct {
 	ctx context.Context
 	ag  *glfs.Machine
-	s   cadata.Getter
+	s   schema.RO
 
 	ref  glfs.Ref
 	name string
@@ -65,7 +65,7 @@ type File struct {
 	tr *glfs.TreeReader
 }
 
-func newGLFSFile(ctx context.Context, ag *glfs.Machine, s cadata.Getter, ent glfs.TreeEntry) *File {
+func newGLFSFile(ctx context.Context, ag *glfs.Machine, s schema.RO, ent glfs.TreeEntry) *File {
 	return &File{
 		ctx: ctx,
 		ag:  ag,

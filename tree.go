@@ -13,8 +13,9 @@ import (
 	"sort"
 	"strings"
 
+	"blobcache.io/blobcache/src/schema"
+	"blobcache.io/glfs/bigblob"
 	"go.brendoncarroll.net/exp/streams"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 // Lookup returns the entry in the tree with name if it exists, or nil if it does not.
@@ -89,7 +90,7 @@ func (te *TreeEntry) Validate() error {
 
 // GetAtPath returns a ref to the object under ref at subpath.
 // ErrNoEnt is returned if there is no entry at that path.
-func (ag *Machine) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, subpath string) (*Ref, error) {
+func (ag *Machine) GetAtPath(ctx context.Context, store schema.RO, ref Ref, subpath string) (*Ref, error) {
 	ent, err := ag.Lookup(ctx, store, TreeEntry{Name: "", Ref: ref}, subpath)
 	if err != nil {
 		return nil, err
@@ -97,7 +98,7 @@ func (ag *Machine) GetAtPath(ctx context.Context, store cadata.Getter, ref Ref, 
 	return &ent.Ref, nil
 }
 
-func (ag *Machine) Lookup(ctx context.Context, store cadata.Getter, ent TreeEntry, subpath string) (*TreeEntry, error) {
+func (ag *Machine) Lookup(ctx context.Context, store schema.RO, ent TreeEntry, subpath string) (*TreeEntry, error) {
 	subpath = strings.Trim(subpath, "/")
 	if subpath == "" {
 		return &ent, nil
@@ -133,7 +134,7 @@ func (ag *Machine) Lookup(ctx context.Context, store cadata.Getter, ent TreeEntr
 
 // GetTree retreives the tree in store at Ref if it exists.
 // If ref.Type != TypeTree ErrRefType is returned.
-func (ag *Machine) GetTreeSlice(ctx context.Context, store cadata.Getter, ref Ref, maxEnts int) ([]TreeEntry, error) {
+func (ag *Machine) GetTreeSlice(ctx context.Context, store schema.RO, ref Ref, maxEnts int) ([]TreeEntry, error) {
 	tr, err := ag.NewTreeReader(store, ref)
 	if err != nil {
 		return nil, err
@@ -147,11 +148,11 @@ type WalkTreeFunc = func(prefix string, tree TreeEntry) error
 // WalkTree walks the tree and calls f with tree entries in lexigraphical order
 // file1.txt comes before file2.txt
 // dir1/ comes before dir1/file1.txt
-func (ag *Machine) WalkTree(ctx context.Context, store cadata.Getter, ref Ref, f WalkTreeFunc) error {
+func (ag *Machine) WalkTree(ctx context.Context, store schema.RO, ref Ref, f WalkTreeFunc) error {
 	return ag.walkTree(ctx, store, ref, f, "")
 }
 
-func (ag *Machine) walkTree(ctx context.Context, store cadata.Getter, ref Ref, f WalkTreeFunc, prefix string) error {
+func (ag *Machine) walkTree(ctx context.Context, store schema.RO, ref Ref, f WalkTreeFunc, prefix string) error {
 	// TODO: use TreeReader
 	ents, err := ag.GetTreeSlice(ctx, store, ref, 1e6)
 	if err != nil {
@@ -175,7 +176,7 @@ type RefWalker func(ref Ref) error
 
 // WalkRefs calls fn with every Ref reacheable from ref, including Ref. The only guarentee about order is bottom up.
 // if a tree is encoutered the child refs will be visited first.
-func (ag *Machine) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn RefWalker) error {
+func (ag *Machine) WalkRefs(ctx context.Context, s schema.RO, ref Ref, fn RefWalker) error {
 	if ref.Type == TypeTree {
 		// TODO: use tree reader
 		ents, err := ag.GetTreeSlice(ctx, s, ref, 1e6)
@@ -191,7 +192,7 @@ func (ag *Machine) WalkRefs(ctx context.Context, s cadata.Getter, ref Ref, fn Re
 	return fn(ref)
 }
 
-func (ag *Machine) PostTree(ctx context.Context, s cadata.PostExister, ents iter.Seq[TreeEntry]) (*Ref, error) {
+func (ag *Machine) PostTree(ctx context.Context, s schema.WO, ents iter.Seq[TreeEntry]) (*Ref, error) {
 	var rootEnts []TreeEntry
 	subents := map[string][]TreeEntry{}
 	for ent := range ents {
@@ -236,7 +237,7 @@ func (ag *Machine) PostTree(ctx context.Context, s cadata.PostExister, ents iter
 	return tw.Finish(ctx)
 }
 
-func (ag *Machine) PostTreeSlice(ctx context.Context, dst cadata.PostExister, ents []TreeEntry) (*Ref, error) {
+func (ag *Machine) PostTreeSlice(ctx context.Context, dst schema.WO, ents []TreeEntry) (*Ref, error) {
 	return ag.PostTree(ctx, dst, func(yield func(TreeEntry) bool) {
 		for _, ent := range ents {
 			if !yield(ent) {
@@ -246,7 +247,7 @@ func (ag *Machine) PostTreeSlice(ctx context.Context, dst cadata.PostExister, en
 	})
 }
 
-func (ag *Machine) PostTreeMap(ctx context.Context, s cadata.PostExister, m map[string]Ref) (*Ref, error) {
+func (ag *Machine) PostTreeMap(ctx context.Context, s schema.WO, m map[string]Ref) (*Ref, error) {
 	entries := []TreeEntry{}
 	for k, v := range m {
 		entries = append(entries, TreeEntry{
@@ -281,13 +282,13 @@ func IsValidName(x string) bool {
 }
 
 type TreeWriter struct {
-	dst      cadata.PostExister
+	dst      schema.WO
 	tw       *TypedWriter
 	enc      *json.Encoder
 	lastName string
 }
 
-func (ag *Machine) NewTreeWriter(s cadata.PostExister) *TreeWriter {
+func (ag *Machine) NewTreeWriter(s schema.WO) *TreeWriter {
 	tw := ag.NewTypedWriter(s, TypeTree)
 	return &TreeWriter{
 		dst: s,
@@ -300,7 +301,7 @@ func (tw *TreeWriter) Put(ctx context.Context, te TreeEntry) error {
 	if te.Name <= tw.lastName {
 		return fmt.Errorf("cannot write tree entries out of order %q <= %q", te.Name, tw.lastName)
 	}
-	if yes, err := tw.dst.Exists(ctx, te.Ref.CID); err != nil {
+	if yes, err := bigblob.ExistsUnit(ctx, tw.dst, te.Ref.CID); err != nil {
 		return err
 	} else if !yes {
 		return fmt.Errorf("adding tree ent %v would violate referential integrity", te)
@@ -321,7 +322,7 @@ func (tw *TreeWriter) Finish(ctx context.Context) (*Ref, error) {
 type TreeReader struct {
 	ag *Machine
 
-	s   cadata.Getter
+	s   schema.RO
 	ref Ref
 	r   io.Reader
 
@@ -329,7 +330,7 @@ type TreeReader struct {
 	last string
 }
 
-func (ag *Machine) NewTreeReader(s cadata.Getter, x Ref) (*TreeReader, error) {
+func (ag *Machine) NewTreeReader(s schema.RO, x Ref) (*TreeReader, error) {
 	if x.Type != TypeTree {
 		return nil, ErrRefType{Have: x.Type, Want: TypeTree}
 	}

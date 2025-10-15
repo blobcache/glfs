@@ -3,6 +3,7 @@ package glfs
 import (
 	"context"
 
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs/bigblob"
 	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/errgroup"
@@ -16,7 +17,7 @@ type Traverser struct {
 	Exit func(ctx context.Context, ty Type, level int, ref bigblob.Ref) error
 }
 
-func (ag *Machine) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, x Ref, tr Traverser) error {
+func (ag *Machine) Traverse(ctx context.Context, s schema.RO, sem *semaphore.Weighted, x Ref, tr Traverser) error {
 	if sem == nil {
 		sem = semaphore.NewWeighted(1)
 	}

@@ -10,9 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/errgroup"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs"
 )
 
@@ -86,6 +87,6 @@ func withTARStream(t *testing.T, p string, fn func(r *tar.Reader)) {
 	fn(tr)
 }
 
-func newStore(t testing.TB) cadata.Store {
-	return cadata.NewMem(cadata.DefaultHash, glfs.DefaultBlockSize)
+func newStore(t testing.TB) *schema.MemStore {
+	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), glfs.DefaultBlockSize)
 }

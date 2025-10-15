@@ -1,8 +1,10 @@
 package bigblob
 
 import (
+	"context"
 	"sync"
 
+	"blobcache.io/blobcache/src/blobcache"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.brendoncarroll.net/state/cadata"
 )
@@ -32,7 +34,7 @@ type Machine struct {
 	cacheSize int
 	blockSize int
 
-	cache   *lru.Cache[cadata.ID, []byte]
+	cache   *lru.Cache[blobcache.CID, []byte]
 	bufPool sync.Pool
 }
 
@@ -40,7 +42,7 @@ func NewMachine(opts ...Option) *Machine {
 	o := Machine{
 		cacheSize: 64,
 		bufPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				buf := []byte(nil)
 				return &buf
 			},
@@ -73,7 +75,19 @@ func newCache(size int) *lru.Cache[cadata.ID, []byte] {
 	return cache
 }
 
+type Exister interface {
+	Exists(ctx context.Context, cids []blobcache.CID, exists []bool) error
+}
+
 type AddExister interface {
-	cadata.Adder
-	cadata.Exister
+	Exister
+	Add(ctx context.Context, cid blobcache.CID) error
+}
+
+func ExistsUnit(ctx context.Context, ex Exister, cid blobcache.CID) (bool, error) {
+	var exists [1]bool
+	if err := ex.Exists(ctx, []blobcache.CID{cid}, exists[:]); err != nil {
+		return false, err
+	}
+	return exists[0], nil
 }

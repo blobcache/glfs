@@ -7,6 +7,7 @@ import (
 	"math/bits"
 	"runtime"
 
+	"blobcache.io/blobcache/src/schema"
 	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/semaphore"
 )
@@ -204,7 +205,7 @@ func (w *Writer) finishIndexes(ctx context.Context) (*Ref, error) {
 }
 
 // Create creates a Blob and returns it's Root.
-func (ag *Machine) Create(ctx context.Context, s cadata.Poster, salt *[32]byte, r io.Reader) (*Root, error) {
+func (ag *Machine) Create(ctx context.Context, s schema.WO, salt *[32]byte, r io.Reader) (*Root, error) {
 	w := ag.NewWriter(s, salt)
 	w.SetWriteContext(ctx)
 	defer w.SetWriteContext(nil)
@@ -265,8 +266,8 @@ func branchingFactor(blockSize uint64) uint64 {
 	return blockSize / maxRefSize
 }
 
-func (ag *Machine) Sync(ctx context.Context, dst cadata.PostExister, src cadata.Getter, x Root, fn func(r *Reader) error) error {
-	if exists, err := dst.Exists(ctx, x.Ref.CID); err != nil {
+func (ag *Machine) Sync(ctx context.Context, dst schema.WO, src schema.RO, x Root, fn func(r *Reader) error) error {
+	if exists, err := ExistsUnit(ctx, dst, x.Ref.CID); err != nil {
 		return err
 	} else if exists {
 		return nil
@@ -278,7 +279,7 @@ func (ag *Machine) Sync(ctx context.Context, dst cadata.PostExister, src cadata.
 	return ag.sync(ctx, dst, src, x.BlockSize, x.Ref, depth(x.Size, x.BlockSize))
 }
 
-func (ag *Machine) sync(ctx context.Context, dst cadata.Poster, src cadata.Getter, blockSize uint64, ref Ref, level int) error {
+func (ag *Machine) sync(ctx context.Context, dst schema.WO, src schema.RO, blockSize uint64, ref Ref, level int) error {
 	if level > 0 {
 		if err := ag.getF(ctx, src, ref, func(data []byte) error {
 			idx, err := newIndexUsing(data, int(blockSize))
@@ -302,11 +303,11 @@ func (ag *Machine) sync(ctx context.Context, dst cadata.Poster, src cadata.Gette
 	return cadata.Copy(ctx, dst, src, ref.CID)
 }
 
-func (ag *Machine) Populate(ctx context.Context, s cadata.Getter, root Root, dst AddExister) error {
+func (ag *Machine) Populate(ctx context.Context, s schema.RO, root Root, dst AddExister) error {
 	sem := semaphore.NewWeighted(int64(runtime.GOMAXPROCS(0)))
 	return ag.Traverse(ctx, s, sem, root, Traverser{
 		Enter: func(ctx context.Context, id cadata.ID) (bool, error) {
-			yes, err := dst.Exists(ctx, id)
+			yes, err := ExistsUnit(ctx, dst, id)
 			if err != nil {
 				return false, err
 			}
@@ -318,7 +319,7 @@ func (ag *Machine) Populate(ctx context.Context, s cadata.Getter, root Root, dst
 	})
 }
 
-func (ag *Machine) Concat(ctx context.Context, s cadata.Store, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
+func (ag *Machine) Concat(ctx context.Context, s schema.RW, blockSize int, salt *[32]byte, roots ...Root) (*Root, error) {
 	rs := make([]io.Reader, len(roots))
 	for i := range roots {
 		rs[i] = ag.NewReader(ctx, s, roots[i])

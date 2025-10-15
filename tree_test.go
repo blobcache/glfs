@@ -6,6 +6,8 @@ import (
 	"io"
 	"testing"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.brendoncarroll.net/state/cadata"
@@ -89,27 +91,27 @@ func TestDataNotFound(t *testing.T) {
 		"b": mustPostBlob(t, s, []byte("hello b")),
 		"c": mustPostBlob(t, s, []byte("hello c")),
 	})
-	require.NoError(t, s.Delete(ctx, ref.CID))
+	require.NoError(t, s.Delete(ctx, []blobcache.CID{ref.CID}))
 	ref2, err := GetAtPath(ctx, s, ref, "a")
 	require.ErrorIs(t, err, cadata.ErrNotFound{Key: ref.CID})
 	require.Nil(t, ref2)
 }
 
-func mustPostTree(t testing.TB, s cadata.PostExister, m map[string]Ref) Ref {
+func mustPostTree(t testing.TB, s schema.WO, m map[string]Ref) Ref {
 	ctx := context.TODO()
 	ref, err := PostTreeMap(ctx, s, m)
 	require.NoError(t, err)
 	return *ref
 }
 
-func mustPostBlob(t testing.TB, s cadata.Poster, data []byte) Ref {
+func mustPostBlob(t testing.TB, s schema.WO, data []byte) Ref {
 	ctx := context.TODO()
 	ref, err := PostBlob(ctx, s, bytes.NewReader(data))
 	require.NoError(t, err)
 	return *ref
 }
 
-func assertTreeExists(t *testing.T, s cadata.Store, ref Ref) bool {
+func assertTreeExists(t *testing.T, s schema.RO, ref Ref) bool {
 	ctx := context.TODO()
 	_, err := GetTreeSlice(ctx, s, ref, 1e6)
 	if err != nil {
@@ -118,7 +120,7 @@ func assertTreeExists(t *testing.T, s cadata.Store, ref Ref) bool {
 	return assert.Nil(t, err)
 }
 
-func assertBlobAtPath(t *testing.T, s cadata.Store, root Ref, p string) bool {
+func assertBlobAtPath(t *testing.T, s schema.RO, root Ref, p string) bool {
 	ctx := context.TODO()
 	ref, err := GetAtPath(ctx, s, root, p)
 	return assert.Nil(t, err) &&
@@ -126,20 +128,20 @@ func assertBlobAtPath(t *testing.T, s cadata.Store, root Ref, p string) bool {
 		assert.Equal(t, ref.Type, TypeBlob)
 }
 
-func logTree(ctx context.Context, t *testing.T, s cadata.Store, ref Ref) {
+func logTree(ctx context.Context, t *testing.T, s schema.RO, ref Ref) {
 	tree, err := GetTreeSlice(ctx, s, ref, 1e6)
 	require.Nil(t, err)
 	t.Log(tree)
 }
 
-func logRaw(t *testing.T, s cadata.Store, ref Ref) {
+func logRaw(t *testing.T, s schema.RO, ref Ref) {
 	ctx := context.TODO()
 	r := defaultOp.bbag.NewReader(ctx, s, ref.Root)
 	data, _ := io.ReadAll(r)
 	t.Log(string(data))
 }
 
-func blobRef(t testing.TB, s cadata.Poster) Ref {
+func blobRef(t testing.TB, s schema.WO) Ref {
 	ref, err := PostBlob(context.TODO(), s, bytes.NewReader(nil))
 	require.NoError(t, err)
 	return *ref

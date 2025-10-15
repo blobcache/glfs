@@ -7,9 +7,10 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs"
 	"github.com/stretchr/testify/require"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 func TestFS(t *testing.T) {
@@ -45,7 +46,7 @@ func TestFS(t *testing.T) {
 	}
 }
 
-func listPaths(t testing.TB, s cadata.Getter, x glfs.Ref) (ret []string) {
+func listPaths(t testing.TB, s schema.RO, x glfs.Ref) (ret []string) {
 	ctx := context.TODO()
 	require.NoError(t, glfs.WalkTree(ctx, s, x, func(prefix string, tree glfs.TreeEntry) error {
 		ret = append(ret, path.Join(prefix, tree.Name))
@@ -54,6 +55,6 @@ func listPaths(t testing.TB, s cadata.Getter, x glfs.Ref) (ret []string) {
 	return ret
 }
 
-func newStore() cadata.Store {
-	return cadata.NewMem(cadata.DefaultHash, 1<<21)
+func newStore() *schema.MemStore {
+	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), glfs.DefaultBlockSize)
 }

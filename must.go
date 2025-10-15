@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 
-	"go.brendoncarroll.net/state/cadata"
+	"blobcache.io/blobcache/src/schema"
 )
 
-func MustPostBlob(s cadata.Poster, x []byte) Ref {
+func MustPostBlob(s schema.WO, x []byte) Ref {
 	ref, err := PostBlob(context.Background(), s, bytes.NewReader(x))
 	if err != nil {
 		panic(err)
@@ -15,7 +15,7 @@ func MustPostBlob(s cadata.Poster, x []byte) Ref {
 	return *ref
 }
 
-func MustPostTreeSlice(s cadata.PostExister, ents []TreeEntry) Ref {
+func MustPostTreeSlice(s schema.WO, ents []TreeEntry) Ref {
 	ref, err := PostTreeSlice(context.Background(), s, ents)
 	if err != nil {
 		panic(err)
@@ -23,7 +23,7 @@ func MustPostTreeSlice(s cadata.PostExister, ents []TreeEntry) Ref {
 	return *ref
 }
 
-func MustPostTreeMap(s cadata.PostExister, m map[string]Ref) Ref {
+func MustPostTreeMap(s schema.WO, m map[string]Ref) Ref {
 	ref, err := PostTreeMap(context.Background(), s, m)
 	if err != nil {
 		panic(err)

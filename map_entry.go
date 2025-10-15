@@ -7,12 +7,12 @@ import (
 
 	"errors"
 
-	"go.brendoncarroll.net/state/cadata"
+	"blobcache.io/blobcache/src/schema"
 )
 
 type TreeEntryMapper func(ent TreeEntry) (*TreeEntry, error)
 
-func (ag *Machine) MapEntries(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, f TreeEntryMapper) (*Ref, error) {
+func (ag *Machine) MapEntries(ctx context.Context, dst schema.WO, src schema.RO, root Ref, f TreeEntryMapper) (*Ref, error) {
 	switch root.Type {
 	case TypeBlob:
 		return &root, nil
@@ -36,7 +36,7 @@ func (ag *Machine) MapEntries(ctx context.Context, dst cadata.PostExister, src c
 	}
 }
 
-func (ag *Machine) MapEntryAt(ctx context.Context, dst cadata.PostExister, src cadata.Getter, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
+func (ag *Machine) MapEntryAt(ctx context.Context, dst schema.WO, src schema.RO, root Ref, p string, f TreeEntryMapper) (*Ref, error) {
 	if p == "" {
 		return nil, errors.New("MapEntryAt cannot operate on empty path")
 	}

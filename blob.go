@@ -5,24 +5,24 @@ import (
 	"context"
 	"io"
 
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs/bigblob"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 type Reader = bigblob.Reader
 
 // PostBlob creates a new blob with data from r, and returns a Ref to it.
-func (ag *Machine) PostBlob(ctx context.Context, s cadata.Poster, r io.Reader) (*Ref, error) {
+func (ag *Machine) PostBlob(ctx context.Context, s schema.WO, r io.Reader) (*Ref, error) {
 	return ag.PostTyped(ctx, s, TypeBlob, r)
 }
 
 // GetBlob returns an io.ReadSeeker for accessing data from the blob at x
-func (ag *Machine) GetBlob(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
+func (ag *Machine) GetBlob(ctx context.Context, s schema.RO, x Ref) (*Reader, error) {
 	return ag.NewBlobReader(ctx, s, x)
 }
 
 // GetBlobBytes reads the entire contents of the blob at x into memory and returns the slice of bytes.
-func (ag *Machine) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, maxSize int) ([]byte, error) {
+func (ag *Machine) GetBlobBytes(ctx context.Context, s schema.RO, x Ref, maxSize int) ([]byte, error) {
 	r, err := ag.GetBlob(ctx, s, x)
 	if err != nil {
 		return nil, err
@@ -30,11 +30,11 @@ func (ag *Machine) GetBlobBytes(ctx context.Context, s cadata.Getter, x Ref, max
 	return readAtMost(r, maxSize)
 }
 
-func (ag *Machine) NewBlobReader(ctx context.Context, s cadata.Getter, x Ref) (*Reader, error) {
+func (ag *Machine) NewBlobReader(ctx context.Context, s schema.RO, x Ref) (*Reader, error) {
 	return ag.GetTyped(ctx, s, TypeBlob, x)
 }
 
-func (ag *Machine) NewBlobWriter(s cadata.Poster) *TypedWriter {
+func (ag *Machine) NewBlobWriter(s schema.WO) *TypedWriter {
 	return ag.NewTypedWriter(s, TypeBlob)
 }
 

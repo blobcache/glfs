@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"testing"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"github.com/stretchr/testify/require"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 func TestShardLeaves(t *testing.T) {
@@ -34,7 +35,7 @@ func TestShardLeaves(t *testing.T) {
 	}
 }
 
-func generateTree(t testing.TB, s cadata.Store, n int) map[string]Ref {
+func generateTree(t testing.TB, s schema.WO, n int) map[string]Ref {
 	m := map[string]Ref{}
 	for i := 0; i < n; i++ {
 		p := strconv.Itoa(i/10) + "/" + strconv.Itoa(i)
@@ -43,6 +44,6 @@ func generateTree(t testing.TB, s cadata.Store, n int) map[string]Ref {
 	return m
 }
 
-func newStore(t testing.TB) cadata.Store {
-	return cadata.NewMem(cadata.DefaultHash, DefaultBlockSize)
+func newStore(_ testing.TB) *schema.MemStore {
+	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), DefaultBlockSize)
 }

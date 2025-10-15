@@ -10,15 +10,14 @@ import (
 	"path"
 	"strings"
 
-	"go.brendoncarroll.net/state/cadata"
-
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs"
 )
 
 const MaxPathLen = 4096
 
 // WriteTAR writes the GLFS filesystem at root to tw.
-func WriteTAR(ctx context.Context, ag *glfs.Machine, s cadata.Getter, root glfs.Ref, tw *tar.Writer) error {
+func WriteTAR(ctx context.Context, ag *glfs.Machine, s schema.RO, root glfs.Ref, tw *tar.Writer) error {
 	if root.Type == glfs.TypeBlob {
 		r, err := ag.GetBlob(ctx, s, root)
 		if err != nil {
@@ -89,7 +88,7 @@ func WriteTAR(ctx context.Context, ag *glfs.Machine, s cadata.Getter, root glfs.
 }
 
 // ReadTAR creates a GLFS filesystem with contents read from tr
-func ReadTAR(ctx context.Context, ag *glfs.Machine, s cadata.PostExister, tr *tar.Reader) (*glfs.Ref, error) {
+func ReadTAR(ctx context.Context, ag *glfs.Machine, s schema.WO, tr *tar.Reader) (*glfs.Ref, error) {
 	ents := []glfs.TreeEntry{}
 	emptyDirs := map[string]glfs.TreeEntry{}
 	for {

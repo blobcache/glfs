@@ -6,15 +6,17 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs/bigblob"
 	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/semaphore"
 )
 
 type GetListDeleter interface {
-	cadata.Getter
+	schema.RO
 	cadata.Lister
-	cadata.Deleter
+	Delete(ctx context.Context, cids []blobcache.CID) error
 }
 
 type GCResult struct {
@@ -45,7 +47,7 @@ func (ag *Machine) GC(ctx context.Context, store GetListDeleter, keep []Ref, opt
 	if err := cadata.ForEach(ctx, store, cadata.Span{}, func(id cadata.ID) error {
 		scanned.Add(1)
 		if _, exists := reachable.m[id]; !exists {
-			if err := store.Delete(ctx, id); err != nil {
+			if err := store.Delete(ctx, []blobcache.CID{id}); err != nil {
 				return err
 			}
 			deleted.Add(1)
@@ -67,7 +69,7 @@ type AddExister interface {
 }
 
 // Populate adds everything reachable form x to dst
-func (ag *Machine) Populate(ctx context.Context, store GetListDeleter, x Ref, dst AddExister) error {
+func (ag *Machine) Populate(ctx context.Context, store schema.RO, x Ref, dst AddExister) error {
 	sem := semaphore.NewWeighted(int64(runtime.GOMAXPROCS(0)))
 	return ag.Traverse(ctx, store, sem, x, Traverser{
 		Enter: func(ctx context.Context, id cadata.ID) (bool, error) {
