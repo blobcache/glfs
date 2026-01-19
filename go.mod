@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.10.0
-	go.brendoncarroll.net/exp v0.0.0-20250112210235-9d4b62bdbd02
+	go.brendoncarroll.net/exp v0.0.0-20260104195250-3ba4c15c0c7a
 	go.brendoncarroll.net/state v0.0.0-20241118200920-627c9c196901
 	golang.org/x/crypto v0.38.0
 	golang.org/x/sync v0.14.0

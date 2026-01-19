@@ -319,6 +319,8 @@ func (tw *TreeWriter) Finish(ctx context.Context) (*Ref, error) {
 	return tw.tw.Finish(ctx)
 }
 
+var _ streams.Iterator[TreeEntry] = &TreeReader{}
+
 type TreeReader struct {
 	ag *Machine
 
@@ -345,12 +347,12 @@ func (ag *Machine) ReadTreeFrom(r io.Reader) *TreeReader {
 	}
 }
 
-func (tr *TreeReader) Next(ctx context.Context, dst *TreeEntry) error {
+func (tr *TreeReader) Next(ctx context.Context, dst []TreeEntry) (int, error) {
 	if tr.dec == nil {
 		if tr.r == nil {
 			r, err := tr.ag.GetTyped(ctx, tr.s, TypeTree, tr.ref)
 			if err != nil {
-				return err
+				return 0, err
 			}
 			tr.r = r
 		}
@@ -359,19 +361,19 @@ func (tr *TreeReader) Next(ctx context.Context, dst *TreeEntry) error {
 
 	if !tr.dec.More() {
 		if _, err := tr.r.Read(nil); !errors.Is(err, io.EOF) {
-			return err
+			return 0, err
 		}
-		return streams.EOS()
+		return 0, streams.EOS()
 	}
-	if err := tr.dec.Decode(dst); err != nil {
-		return err
+	if err := tr.dec.Decode(&dst[0]); err != nil {
+		return 0, err
 	}
-	if dst.Name <= tr.last {
-		return fmt.Errorf("tree entries are out of order: %v <= %v", dst.Name, tr.last)
+	if dst[0].Name <= tr.last {
+		return 0, fmt.Errorf("tree entries are out of order: %v <= %v", dst[0].Name, tr.last)
 	}
-	if err := dst.Validate(); err != nil {
-		return err
+	if err := dst[0].Validate(); err != nil {
+		return 0, err
 	}
-	tr.last = dst.Name
-	return nil
+	tr.last = dst[0].Name
+	return 1, nil
 }
