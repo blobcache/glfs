@@ -10,7 +10,6 @@ import (
 	"blobcache.io/blobcache/src/bcsdk"
 	"blobcache.io/blobcache/src/blobcache"
 	"blobcache.io/blobcache/src/schema"
-	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -302,7 +301,17 @@ func (ag *Machine) sync(ctx context.Context, dst schema.WO, src schema.RO, block
 			return err
 		}
 	}
-	return cadata.Copy(ctx, dst, src, ref.CID)
+	return copyBlob(ctx, dst, src, ref.CID)
+}
+
+func copyBlob(ctx context.Context, dst bcsdk.WO, src bcsdk.RO, cid blobcache.CID) error {
+	buf := make([]byte, min(src.MaxSize(), dst.MaxSize()))
+	n, err := src.Get(ctx, cid, buf)
+	if err != nil {
+		return err
+	}
+	_, err = dst.Post(ctx, buf[:n])
+	return err
 }
 
 func (ag *Machine) Populate(ctx context.Context, s schema.RO, root Root, dst AddExister) error {

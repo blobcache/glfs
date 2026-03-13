@@ -13,19 +13,16 @@ require (
 )
 
 require (
-	github.com/cloudflare/circl v1.6.1 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
-	go.brendoncarroll.net/p2p v0.0.0-20241118201502-2abd1a6f58e7 // indirect
-	go.brendoncarroll.net/tai64 v0.0.0-20241118171318-6e12d283d5e4 // indirect
-	go.inet256.org/inet256 v0.0.8 // indirect
-)
-
-require (
 	blobcache.io/blobcache v0.5.1-0.20260313004939-67f9e150c2f9
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	go.brendoncarroll.net/p2p v0.0.0-20241118201502-2abd1a6f58e7 // indirect
+	go.brendoncarroll.net/tai64 v0.0.0-20241118171318-6e12d283d5e4 // indirect
+	go.inet256.org/inet256 v0.0.8 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
