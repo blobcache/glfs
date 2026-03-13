@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"go.brendoncarroll.net/state/cadata"
+	"blobcache.io/blobcache/src/bcsdk"
 )
 
 var (
@@ -15,12 +15,12 @@ var (
 type Reader struct {
 	o      *Machine
 	ctx    context.Context
-	store  cadata.Getter
+	store  bcsdk.RO
 	root   Root
 	offset int64
 }
 
-func (ag *Machine) NewReader(ctx context.Context, s cadata.Getter, root Root) *Reader {
+func (ag *Machine) NewReader(ctx context.Context, s bcsdk.RO, root Root) *Reader {
 	return &Reader{
 		o:     ag,
 		ctx:   ctx,

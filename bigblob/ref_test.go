@@ -5,18 +5,19 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"blobcache.io/blobcache/src/blobcache"
+	"blobcache.io/blobcache/src/schema"
 	"github.com/stretchr/testify/require"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 func TestRefPostGet(t *testing.T) {
 	ctx := context.TODO()
-	ag := NewMachine()
-	s := cadata.NewMem(cadata.DefaultHash, 1<<10)
+	mach := NewMachine()
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), 1<<10)
 	testData := "test data"
-	ref, err := ag.post(ctx, s, new([32]byte), []byte(testData))
+	ref, err := mach.post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)
-	err = ag.getF(ctx, s, *ref, func(data []byte) error {
+	err = mach.getF(ctx, s, *ref, func(data []byte) error {
 		require.Equal(t, testData, string(data))
 		return nil
 	})
@@ -25,10 +26,10 @@ func TestRefPostGet(t *testing.T) {
 
 func TestRefMarshal(t *testing.T) {
 	ctx := context.TODO()
-	ag := NewMachine()
-	s := cadata.NewMem(cadata.DefaultHash, 1<<10)
+	mach := NewMachine()
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), 1<<10)
 	testData := "test data"
-	ref, err := ag.post(ctx, s, new([32]byte), []byte(testData))
+	ref, err := mach.post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)
 
 	data := marshalRef(*ref)

@@ -6,7 +6,6 @@ import (
 
 	"blobcache.io/blobcache/src/blobcache"
 	lru "github.com/hashicorp/golang-lru/v2"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 type Option func(*Machine)
@@ -67,8 +66,8 @@ func (ag *Machine) releaseBuffer(x *[]byte) {
 	ag.bufPool.Put(x)
 }
 
-func newCache(size int) *lru.Cache[cadata.ID, []byte] {
-	cache, err := lru.New[cadata.ID, []byte](size)
+func newCache(size int) *lru.Cache[blobcache.CID, []byte] {
+	cache, err := lru.New[blobcache.CID, []byte](size)
 	if err != nil {
 		panic(err)
 	}

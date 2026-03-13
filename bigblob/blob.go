@@ -7,6 +7,8 @@ import (
 	"math/bits"
 	"runtime"
 
+	"blobcache.io/blobcache/src/bcsdk"
+	"blobcache.io/blobcache/src/blobcache"
 	"blobcache.io/blobcache/src/schema"
 	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/semaphore"
@@ -27,7 +29,7 @@ func (r1 Root) Equals(r2 Root) bool {
 	return r1.Size == r2.Size && r1.BlockSize == r2.BlockSize && r1.Ref.Equals(r2.Ref)
 }
 
-func (ag *Machine) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset int64, buf []byte) (n int, err error) {
+func (ag *Machine) ReadAt(ctx context.Context, s bcsdk.RO, x Root, offset int64, buf []byte) (n int, err error) {
 	level := depth(x.Size, x.BlockSize)
 	bf := branchingFactor(x.BlockSize)
 	blockIndex := uint64(offset) / x.BlockSize
@@ -49,7 +51,7 @@ func (ag *Machine) ReadAt(ctx context.Context, s cadata.Getter, x Root, offset i
 	return n, nil
 }
 
-func (ag *Machine) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, level, blockIndex int) (*Ref, error) {
+func (ag *Machine) getPiece(ctx context.Context, s bcsdk.RO, root Ref, bf, level, blockIndex int) (*Ref, error) {
 	if level == 0 {
 		return &root, nil
 	}
@@ -70,7 +72,7 @@ func (ag *Machine) getPiece(ctx context.Context, s cadata.Getter, root Ref, bf, 
 type Writer struct {
 	ctx                context.Context
 	ag                 *Machine
-	s                  cadata.Poster
+	s                  bcsdk.WO
 	blockSize          int
 	indexSalt, rawSalt *[32]byte
 	branchingFactor    int
@@ -81,7 +83,7 @@ type Writer struct {
 	buf     []byte
 }
 
-func (ag *Machine) NewWriter(s cadata.Poster, salt *[32]byte) *Writer {
+func (ag *Machine) NewWriter(s bcsdk.WO, salt *[32]byte) *Writer {
 	blockSize := s.MaxSize()
 	if ag.blockSize > 0 {
 		blockSize = ag.blockSize
@@ -306,7 +308,7 @@ func (ag *Machine) sync(ctx context.Context, dst schema.WO, src schema.RO, block
 func (ag *Machine) Populate(ctx context.Context, s schema.RO, root Root, dst AddExister) error {
 	sem := semaphore.NewWeighted(int64(runtime.GOMAXPROCS(0)))
 	return ag.Traverse(ctx, s, sem, root, Traverser{
-		Enter: func(ctx context.Context, id cadata.ID) (bool, error) {
+		Enter: func(ctx context.Context, id blobcache.CID) (bool, error) {
 			yes, err := ExistsUnit(ctx, dst, id)
 			if err != nil {
 				return false, err

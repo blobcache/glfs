@@ -44,7 +44,7 @@ func (ag *Machine) GC(ctx context.Context, store GetListDeleter, keep []Ref, opt
 	// iterate through prefix and delete
 	var scanned, deleted atomic.Uint64
 	// TODO: parallelize
-	if err := cadata.ForEach(ctx, store, cadata.Span{}, func(id cadata.ID) error {
+	if err := cadata.ForEach(ctx, store, cadata.Span{}, func(id blobcache.CID) error {
 		scanned.Add(1)
 		if _, exists := reachable.m[id]; !exists {
 			if err := store.Delete(ctx, []blobcache.CID{id}); err != nil {
@@ -72,7 +72,7 @@ type AddExister interface {
 func (ag *Machine) Populate(ctx context.Context, store schema.RO, x Ref, dst AddExister) error {
 	sem := semaphore.NewWeighted(int64(runtime.GOMAXPROCS(0)))
 	return ag.Traverse(ctx, store, sem, x, Traverser{
-		Enter: func(ctx context.Context, id cadata.ID) (bool, error) {
+		Enter: func(ctx context.Context, id blobcache.CID) (bool, error) {
 			exists, err := dst.Exists(ctx, id)
 			if err != nil {
 				return false, err
@@ -87,20 +87,20 @@ func (ag *Machine) Populate(ctx context.Context, store schema.RO, x Ref, dst Add
 
 type idSet struct {
 	mu sync.RWMutex
-	m  map[cadata.ID]struct{}
+	m  map[blobcache.CID]struct{}
 }
 
-func (s *idSet) Add(ctx context.Context, id cadata.ID) error {
+func (s *idSet) Add(ctx context.Context, id blobcache.CID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.m == nil {
-		s.m = make(map[cadata.ID]struct{})
+		s.m = make(map[blobcache.CID]struct{})
 	}
 	s.m[id] = struct{}{}
 	return nil
 }
 
-func (s *idSet) Exists(ctx context.Context, id cadata.ID) (bool, error) {
+func (s *idSet) Exists(ctx context.Context, id blobcache.CID) (bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	_, exists := s.m[id]

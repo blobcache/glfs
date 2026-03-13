@@ -3,16 +3,16 @@ package glfs
 import (
 	"context"
 
+	"blobcache.io/blobcache/src/blobcache"
 	"blobcache.io/blobcache/src/schema"
 	"blobcache.io/glfs/bigblob"
-	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
 
 type Traverser struct {
 	// Enter is called before visiting a node, if false is returned the node is skipped.
-	Enter func(ctx context.Context, id cadata.ID) (bool, error)
+	Enter func(ctx context.Context, id blobcache.CID) (bool, error)
 	// Exit is called before leaving a node.  After all it's children have been visited.
 	Exit func(ctx context.Context, ty Type, level int, ref bigblob.Ref) error
 }

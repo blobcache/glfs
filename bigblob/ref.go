@@ -10,6 +10,8 @@ import (
 	"io"
 	"strings"
 
+	"blobcache.io/blobcache/src/bcsdk"
+	"blobcache.io/blobcache/src/blobcache"
 	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/crypto/chacha20"
 	"lukechampine.com/blake3"
@@ -49,12 +51,12 @@ func (dek *DEK) UnmarshalJSON(data []byte) error {
 }
 
 // RefSize is the size of a Ref marshalled to binary
-const RefSize = cadata.IDSize + DEKSize
+const RefSize = blobcache.CIDSize + DEKSize
 
 // Ref is a reference to data in a content-addressed store
 type Ref struct {
-	CID cadata.ID `json:"cid"`
-	DEK DEK       `json:"dek"`
+	CID blobcache.CID `json:"cid"`
+	DEK DEK           `json:"dek"`
 }
 
 func RefFromBytes(x []byte) (*Ref, error) {
@@ -95,7 +97,7 @@ func marshalRef(x Ref) []byte {
 	return data
 }
 
-func (ag *Machine) post(ctx context.Context, s cadata.Poster, salt *[32]byte, ptext []byte) (*Ref, error) {
+func (ag *Machine) post(ctx context.Context, s bcsdk.WO, salt *[32]byte, ptext []byte) (*Ref, error) {
 	buf := ag.acquireBuffer(len(ptext))
 	defer ag.releaseBuffer(buf)
 	ctext := make([]byte, len(ptext))
@@ -110,16 +112,13 @@ func (ag *Machine) post(ctx context.Context, s cadata.Poster, salt *[32]byte, pt
 	}, nil
 }
 
-func (ag *Machine) getF(ctx context.Context, s cadata.Getter, ref Ref, fn func([]byte) error) error {
+func (ag *Machine) getF(ctx context.Context, s bcsdk.RO, ref Ref, fn func([]byte) error) error {
 	if value, ok := ag.cache.Get(ref.Key()); ok {
 		return fn(value)
 	}
 	buf := make([]byte, s.MaxSize())
 	n, err := s.Get(ctx, ref.CID, buf)
 	if err != nil {
-		return err
-	}
-	if err := cadata.Check(s.Hash, ref.CID, buf[:n]); err != nil {
 		return err
 	}
 	cryptoXOR(ref.DEK, buf[:n], buf[:n])
@@ -165,7 +164,7 @@ func DeriveKey(out []byte, salt *[32]byte, input []byte) {
 
 func dumpStore(x cadata.Store) string {
 	sb := strings.Builder{}
-	cadata.ForEach(context.TODO(), x, cadata.Span{}, func(x cadata.ID) error {
+	cadata.ForEach(context.TODO(), x, cadata.Span{}, func(x blobcache.CID) error {
 		sb.WriteString(x.String())
 		sb.WriteString("\n")
 		return nil

@@ -4,24 +4,25 @@ import (
 	"context"
 	"fmt"
 
-	"go.brendoncarroll.net/state/cadata"
+	"blobcache.io/blobcache/src/bcsdk"
+	"blobcache.io/blobcache/src/blobcache"
 	"golang.org/x/sync/semaphore"
 )
 
 type Traverser struct {
 	// If Enter returns false the node is skipped
-	Enter func(ctx context.Context, id cadata.ID) (bool, error)
+	Enter func(ctx context.Context, id blobcache.CID) (bool, error)
 	Exit  func(ctx context.Context, level int, ref Ref) error
 }
 
-func (ag *Machine) Traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, root Root, tr Traverser) error {
+func (ag *Machine) Traverse(ctx context.Context, s bcsdk.RO, sem *semaphore.Weighted, root Root, tr Traverser) error {
 	if root.BlockSize == 0 {
 		return fmt.Errorf("block size cannot be zero")
 	}
 	return ag.traverse(ctx, s, sem, root.BlockSize, depth(root.Size, root.BlockSize), root.Ref, tr)
 }
 
-func (ag *Machine) traverse(ctx context.Context, s cadata.Getter, sem *semaphore.Weighted, blockSize uint64, level int, x Ref, tr Traverser) error {
+func (ag *Machine) traverse(ctx context.Context, s bcsdk.RO, sem *semaphore.Weighted, blockSize uint64, level int, x Ref, tr Traverser) error {
 	if yes, err := tr.Enter(ctx, x.CID); err != nil {
 		return err
 	} else if !yes {

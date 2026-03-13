@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	"blobcache.io/blobcache/src/bcsdk"
 	"blobcache.io/glfs/bigblob"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 const DefaultBlockSize = 1 << 21
@@ -47,7 +47,7 @@ func (a Ref) Equals(b Ref) bool {
 
 // PostTyped posts data with an arbitrary type.
 // This can be used to extend the types provided by glfs, without interfering with syncing.
-func (ag *Machine) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io.Reader) (*Ref, error) {
+func (ag *Machine) PostTyped(ctx context.Context, s bcsdk.WO, ty Type, r io.Reader) (*Ref, error) {
 	tw := ag.NewTypedWriter(s, ty)
 	tw.SetWriteContext(ctx)
 	if _, err := io.Copy(tw, r); err != nil {
@@ -58,7 +58,7 @@ func (ag *Machine) PostTyped(ctx context.Context, s cadata.Poster, ty Type, r io
 
 // GetTyped retrieves the object in s at x.
 // If x.Type != ty, ErrRefType is returned.
-func (ag *Machine) GetTyped(ctx context.Context, s cadata.Getter, ty Type, x Ref) (*Reader, error) {
+func (ag *Machine) GetTyped(ctx context.Context, s bcsdk.RO, ty Type, x Ref) (*Reader, error) {
 	if ty != "" && x.Type != ty {
 		return nil, ErrRefType{Have: x.Type, Want: ty}
 	}
@@ -71,7 +71,7 @@ type TypedWriter struct {
 }
 
 // NewTypedWriter returns a new writer for ty.
-func (ag *Machine) NewTypedWriter(s cadata.Poster, ty Type) *TypedWriter {
+func (ag *Machine) NewTypedWriter(s bcsdk.WO, ty Type) *TypedWriter {
 	return &TypedWriter{ty: ty, bw: ag.bbag.NewWriter(s, ag.makeSalt(ty))}
 }
 
@@ -94,9 +94,4 @@ func (tw *TypedWriter) Finish(ctx context.Context) (*Ref, error) {
 // SizeOf returns the size of the data at x
 func SizeOf(x Ref) uint64 {
 	return x.Size
-}
-
-type PostLister interface {
-	cadata.Poster
-	cadata.Lister
 }

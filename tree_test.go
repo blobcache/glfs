@@ -10,7 +10,6 @@ import (
 	"blobcache.io/blobcache/src/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.brendoncarroll.net/state/cadata"
 )
 
 func TestPostTreeFromEntries(t *testing.T) {
@@ -93,7 +92,7 @@ func TestDataNotFound(t *testing.T) {
 	})
 	require.NoError(t, s.Delete(ctx, []blobcache.CID{ref.CID}))
 	ref2, err := GetAtPath(ctx, s, ref, "a")
-	require.ErrorIs(t, err, cadata.ErrNotFound{Key: ref.CID})
+	require.ErrorIs(t, err, blobcache.ErrNotFound{CID: ref.CID})
 	require.Nil(t, ref2)
 }
 
