@@ -148,10 +148,3 @@ func MapEntryAt(ctx context.Context, dst schema.WO, src schema.RO, root Ref, p s
 func Merge(ctx context.Context, dst schema.WO, src schema.RO, layers ...Ref) (*Ref, error) {
 	return defaultOp.Merge(ctx, dst, src, layers...)
 }
-
-// GC will remove objects from store which are not referenced by any of the refs in keep.
-// If GC does not successfully complete, referential integrity may be violated, and GC will need
-// to be run to completion before it is safe to call Sync on the store again.
-func GC(ctx context.Context, store GetListDeleter, keep []Ref, opts ...GCOption) (*GCResult, error) {
-	return defaultOp.GC(ctx, store, keep, opts...)
-}

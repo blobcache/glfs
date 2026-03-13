@@ -8,11 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 
 	"blobcache.io/blobcache/src/bcsdk"
 	"blobcache.io/blobcache/src/blobcache"
-	"go.brendoncarroll.net/state/cadata"
 	"golang.org/x/crypto/chacha20"
 	"lukechampine.com/blake3"
 )
@@ -160,14 +158,4 @@ func DeriveKey(out []byte, salt *[32]byte, input []byte) {
 	if _, err := io.ReadFull(xof, out); err != nil {
 		panic(err)
 	}
-}
-
-func dumpStore(x cadata.Store) string {
-	sb := strings.Builder{}
-	cadata.ForEach(context.TODO(), x, cadata.Span{}, func(x cadata.ID) error {
-		sb.WriteString(x.String())
-		sb.WriteString("\n")
-		return nil
-	})
-	return sb.String()
 }
