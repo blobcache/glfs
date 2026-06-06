@@ -16,7 +16,7 @@ import (
 func TestImport(t *testing.T) {
 	ctx := context.Background()
 	ag := glfs.NewMachine()
-	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), glfs.DefaultBlockSize)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, glfs.DefaultBlockSize)
 	fs := posixfs.NewTestFS(t)
 	require.NoError(t, posixfs.PutFile(ctx, fs, "test.txt", 0o644, strings.NewReader("hello world")))
 
@@ -32,7 +32,7 @@ func TestImport(t *testing.T) {
 func TestExport(t *testing.T) {
 	ctx := context.Background()
 	op := glfs.NewMachine()
-	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), glfs.DefaultBlockSize)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, glfs.DefaultBlockSize)
 	fs := posixfs.NewTestFS(t)
 	sem := semaphore.NewWeighted(10)
 

@@ -56,5 +56,5 @@ func newZipReader(t testing.TB, u string) *zip.Reader {
 }
 
 func newStore(t testing.TB) *schema.MemStore {
-	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), glfs.DefaultBlockSize)
+	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, glfs.DefaultBlockSize)
 }

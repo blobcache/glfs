@@ -13,7 +13,7 @@ import (
 func TestRefPostGet(t *testing.T) {
 	ctx := context.TODO()
 	mach := NewMachine()
-	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), 1<<10)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, 1<<10)
 	testData := "test data"
 	ref, err := mach.post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)
@@ -27,7 +27,7 @@ func TestRefPostGet(t *testing.T) {
 func TestRefMarshal(t *testing.T) {
 	ctx := context.TODO()
 	mach := NewMachine()
-	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), 1<<10)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, 1<<10)
 	testData := "test data"
 	ref, err := mach.post(ctx, s, new([32]byte), []byte(testData))
 	require.NoError(t, err)

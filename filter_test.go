@@ -45,5 +45,5 @@ func generateTree(t testing.TB, s schema.WO, n int) map[string]Ref {
 }
 
 func newStore(_ testing.TB) *schema.MemStore {
-	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), DefaultBlockSize)
+	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, DefaultBlockSize)
 }

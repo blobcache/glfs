@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"blobcache.io/blobcache/src/bcsdk"
 	"blobcache.io/blobcache/src/blobcache"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
@@ -75,7 +76,7 @@ func newCache(size int) *lru.Cache[blobcache.CID, []byte] {
 }
 
 type Exister interface {
-	Exists(ctx context.Context, cids []blobcache.CID, exists []bool) error
+	bcsdk.Exists
 }
 
 type AddExister interface {
@@ -84,9 +85,5 @@ type AddExister interface {
 }
 
 func ExistsUnit(ctx context.Context, ex Exister, cid blobcache.CID) (bool, error) {
-	var exists [1]bool
-	if err := ex.Exists(ctx, []blobcache.CID{cid}, exists[:]); err != nil {
-		return false, err
-	}
-	return exists[0], nil
+	return bcsdk.ExistsUnit(ctx, ex, cid)
 }

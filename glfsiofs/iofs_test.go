@@ -56,5 +56,5 @@ func listPaths(t testing.TB, s schema.RO, x glfs.Ref) (ret []string) {
 }
 
 func newStore() *schema.MemStore {
-	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), glfs.DefaultBlockSize)
+	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, glfs.DefaultBlockSize)
 }

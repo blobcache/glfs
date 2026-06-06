@@ -48,7 +48,7 @@ func TestCreateFile(t *testing.T) {
 	const defaultMaxSize = 1 << 20
 	ctx := context.Background()
 	ag := NewMachine()
-	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), defaultMaxSize)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, defaultMaxSize)
 
 	const size = defaultMaxSize * 3
 	rng := rand.New(rand.NewSource(0))
@@ -96,7 +96,7 @@ func TestCreateRead(t *testing.T) {
 func testCreateRead(t *testing.T, size, blockSize int) {
 	ctx := context.Background()
 	ag := NewMachine()
-	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), 1<<20)
+	s := schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, 1<<20)
 	newRNG := func() io.Reader { return io.LimitReader(rand.New(rand.NewSource(0)), int64(size)) }
 
 	root, err := ag.Create(ctx, s, nil, newRNG())

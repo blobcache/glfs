@@ -88,5 +88,5 @@ func withTARStream(t *testing.T, p string, fn func(r *tar.Reader)) {
 }
 
 func newStore(t testing.TB) *schema.MemStore {
-	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.HashFunc(), glfs.DefaultBlockSize)
+	return schema.NewMem(blobcache.HashAlgo_BLAKE3_256.Hash, glfs.DefaultBlockSize)
 }
